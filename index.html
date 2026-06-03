@@ -5,6 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Game Companion</title>
 <style>
+  /* ---- Responsive scale tokens ---- */
+  :root {
+    /* Grid cell: 28px on small phones → 44px on tablets */
+    --cell:      clamp(28px, 7.5vw, 44px);
+    /* Name column: matches cell row width */
+    --name-w:    clamp(72px, 19vw, 110px);
+    /* X / ✓ glyph inside cell */
+    --cell-font: clamp(16px, 4.5vw, 28px);
+    /* Type icons in header row */
+    --ticon:     clamp(22px, 5.5vw, 32px);
+    /* Tab-bar icon size */
+    --tab-sz:    clamp(44px, 11vw, 68px);
+  }
+  /* Tiny phones (≤360px): tighten further & reduce padding */
+  @media (max-width: 360px) {
+    :root { --cell: 24px; --name-w: 58px; --cell-font: 14px; --ticon: 20px; }
+    .content { padding: 8px !important; }
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
@@ -23,7 +42,8 @@
   /* ---------- Reset button ---------- */
   .reset-btn {
     position: absolute; top: 16px; right: 16px; z-index: 50;
-    width: 120px; height: 60px; border: none; background: transparent; cursor: pointer;
+    width: clamp(80px, 20vw, 120px); height: clamp(40px, 10vw, 60px);
+    border: none; background: transparent; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
   .reset-btn img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
@@ -36,54 +56,61 @@
   .tab1-wrap { display: flex; flex-direction: column; align-items: center; gap: 24px; padding-top: 60px; }
   .table { display: inline-block; }
   .trow { display: flex; align-items: center; }
-  .theader { width: 102px; font-weight: bold; padding: 5px; text-align: center; color: #0c3; }
-  .ticon { width: 28px; height: 28px; object-fit: contain; }
+  .theader { width: var(--name-w); font-weight: bold; padding: 5px; text-align: center; color: #0c3; }
+  .ticon { width: var(--ticon); height: var(--ticon); object-fit: contain; }
   .ticon-fallback {
-    width: 28px; height: 28px; border-radius: 50%; background: #0a7c3a; color: #fff;
+    width: var(--ticon); height: var(--ticon); border-radius: 50%; background: #0a7c3a; color: #fff;
     display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold;
   }
   .name-input {
-    width: 100px; border: 1px solid green; padding: 8px; margin: 1px;
+    width: var(--name-w); border: 1px solid green; padding: clamp(4px, 1.5vw, 8px); margin: 1px;
     text-align: center; background: rgba(255,255,255,0.2); color: #043; outline: none;
+    font-size: clamp(11px, 3vw, 14px);
   }
   .cell {
-    width: 35px; height: 35px; border: 1px solid green; margin: 0 2px;
+    width: var(--cell); height: var(--cell); border: 1px solid green; margin: 0 1px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; user-select: none; background: transparent;
   }
   .cell.checked { background: green; }
-  .cell-text { font-weight: bold; font-size: 25px; line-height: 1; }
+  .cell-text { font-weight: bold; font-size: var(--cell-font); line-height: 1; }
 
   /* ---------- Point tracker ---------- */
   .point-box {
-    background: #e0fff1; border-radius: 12px; width: 300px; max-width: 90vw;
+    background: #e0fff1; border-radius: 12px; width: clamp(220px, 80vw, 300px);
     padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
-  .point-label { font-size: 25px; font-weight: bold; color: #043; }
+  .point-label { font-size: clamp(18px, 5vw, 25px); font-weight: bold; color: #043; }
   .point-value {
-    font-size: 96px; font-weight: bold; color: green; line-height: 1;
+    font-size: clamp(64px, 20vw, 96px); font-weight: bold; color: green; line-height: 1;
     margin: -8px 0; background: none; border: none; cursor: pointer;
   }
   .add-btn {
-    background: green; border: none; border-radius: 20px; width: 40px; height: 40px;
-    color: #e0fff1; font-size: 32px; font-weight: bold; cursor: pointer; line-height: 1;
+    background: green; border: none; border-radius: 20px;
+    width: clamp(36px, 9vw, 48px); height: clamp(36px, 9vw, 48px);
+    color: #e0fff1; font-size: clamp(24px, 7vw, 36px); font-weight: bold; cursor: pointer; line-height: 1;
   }
 
   /* ---------- Tab 2: Cards ---------- */
   .filter-icons {
-    display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;
+    display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(6px, 2vw, 12px);
     margin-bottom: 16px;
   }
   .filter-icon { cursor: pointer; background: none; border: none; padding: 0; }
-  .filter-icon img, .filter-icon .ic-fallback { width: 50px; height: 50px; object-fit: contain; opacity: 0.4; transition: opacity .15s; }
+  .filter-icon img, .filter-icon .ic-fallback {
+    width: clamp(36px, 9vw, 52px); height: clamp(36px, 9vw, 52px);
+    object-fit: contain; opacity: 0.4; transition: opacity .15s;
+  }
   .filter-icon.selected img, .filter-icon.selected .ic-fallback { opacity: 1; }
   .ic-fallback {
     border-radius: 50%; background: #0a7c3a; color: #fff;
     display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px;
   }
-  .card-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-  }
+  /* 3 cols on phones, 4 on mid-size, 5 on tablets+ */
+  .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  @media (min-width: 480px) { .card-grid { grid-template-columns: repeat(4, 1fr); } }
+  @media (min-width: 680px) { .card-grid { grid-template-columns: repeat(5, 1fr); } }
+
   .card-item { cursor: pointer; border-radius: 8px; overflow: hidden; aspect-ratio: 1; }
   .card-item img { width: 100%; height: 100%; object-fit: contain; display: block; }
   .card-item .card-fallback {
@@ -102,9 +129,10 @@
     padding: 8px; gap: 8px;
   }
   .tab-button { background: none; border: none; cursor: pointer; padding: 4px; }
-  .tab-button img { height: 60px; width: 60px; object-fit: contain; }
+  .tab-button img { height: var(--tab-sz); width: var(--tab-sz); object-fit: contain; }
   .tab-button .tab-fallback {
-    height: 56px; width: 80px; border-radius: 10px; background: #0a7c3a; color: #fff;
+    height: var(--tab-sz); width: calc(var(--tab-sz) * 1.3); border-radius: 10px;
+    background: #0a7c3a; color: #fff;
     display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px;
     opacity: 0.6;
   }
@@ -158,9 +186,16 @@
     font-size: 18px; font-weight: bold; cursor: pointer;
   }
 
-  /* Landscape tweaks */
+  /* ---------- Landscape ---------- */
   @media (orientation: landscape) {
     .tab1-wrap { flex-direction: row; align-items: center; justify-content: center; padding-top: 16px; }
+  }
+
+  /* ---------- Wide screens (tablet / desktop) ---------- */
+  @media (min-width: 640px) {
+    .tab1-wrap { padding-top: 32px; }
+    /* Centre the score table with breathing room on sides */
+    .tab1-wrap > .table { margin: 0 auto; }
   }
 </style>
 </head>
