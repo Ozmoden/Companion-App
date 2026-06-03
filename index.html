@@ -35,7 +35,12 @@
 
   body { color: #0c3; }
 
-  .app { position: relative; height: 100vh; display: flex; flex-direction: column; }
+  .app {
+    position: relative;
+    height: 100vh;
+    height: 100dvh; /* iOS 15.4+: accounts for browser chrome, avoids content hiding behind toolbar */
+    display: flex; flex-direction: column;
+  }
 
   .content { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 16px; }
 
@@ -53,7 +58,7 @@
   }
 
   /* ---------- Tab 1: Table ---------- */
-  .tab1-wrap { display: flex; flex-direction: column; align-items: center; gap: 24px; padding-top: 60px; }
+  .tab1-wrap { display: flex; flex-direction: column; align-items: center; gap: clamp(8px, 2vh, 24px); padding-top: clamp(48px, 7vh, 70px); }
   .table { display: inline-block; }
   .trow { display: flex; align-items: center; }
   .theader { width: var(--name-w); font-weight: bold; padding: 5px; text-align: center; color: #0c3; }
@@ -78,17 +83,18 @@
   /* ---------- Point tracker ---------- */
   .point-box {
     background: #e0fff1; border-radius: 12px; width: clamp(220px, 80vw, 300px);
-    padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: clamp(8px, 2vh, 16px); display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
-  .point-label { font-size: clamp(18px, 5vw, 25px); font-weight: bold; color: #043; }
+  .point-label { font-size: clamp(16px, 4vw, 25px); font-weight: bold; color: #043; }
   .point-value {
-    font-size: clamp(64px, 20vw, 96px); font-weight: bold; color: green; line-height: 1;
-    margin: -8px 0; background: none; border: none; cursor: pointer;
+    /* Scale with both width and height so it doesn't push content off screen on short phones */
+    font-size: clamp(48px, min(18vw, 11vh), 96px); font-weight: bold; color: green; line-height: 1;
+    margin: -4px 0; background: none; border: none; cursor: pointer;
   }
   .add-btn {
     background: green; border: none; border-radius: 20px;
-    width: clamp(36px, 9vw, 48px); height: clamp(36px, 9vw, 48px);
-    color: #e0fff1; font-size: clamp(24px, 7vw, 36px); font-weight: bold; cursor: pointer; line-height: 1;
+    width: clamp(32px, 8vw, 48px); height: clamp(32px, 8vw, 48px);
+    color: #e0fff1; font-size: clamp(22px, 6vw, 36px); font-weight: bold; cursor: pointer; line-height: 1;
   }
 
   /* ---------- Tab 2: Cards ---------- */
@@ -189,6 +195,25 @@
   /* ---------- Landscape ---------- */
   @media (orientation: landscape) {
     .tab1-wrap { flex-direction: row; align-items: center; justify-content: center; padding-top: 16px; }
+  }
+
+  /* Landscape on small phones: cells were sized by vw (now the wide axis),
+     so switch to vh-based sizing to fit 9 rows in the short screen height. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    :root {
+      --cell:      clamp(20px, 5vh, 30px);   /* 375px tall → 18.75px → 20px min */
+      --name-w:    clamp(56px, 13vw, 85px);
+      --cell-font: clamp(11px, 2.8vh, 18px);
+      --ticon:     clamp(16px, 4vh, 26px);
+      --tab-sz:    clamp(36px, 9vw, 52px);
+    }
+    .tab1-wrap  { padding-top: 8px !important; gap: 6px !important; }
+    /* Collapse input padding so rows match cell height (~20px) not input natural height (~36px) */
+    .name-input { padding: 2px 4px !important; font-size: 11px !important; }
+    .point-box  { width: clamp(150px, 30vw, 240px) !important; padding: 8px !important; }
+    .point-value { font-size: clamp(36px, min(12vw, 9vh), 72px) !important; margin: 0 !important; }
+    .point-label { font-size: clamp(13px, 3vh, 18px) !important; }
+    .add-btn    { width: 32px !important; height: 32px !important; font-size: 22px !important; }
   }
 
   /* ---------- Wide screens (tablet / desktop) ---------- */
