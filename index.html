@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Game Companion</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+  /* Background video with dark fallback */
+  #bg-video {
+    position: fixed; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; z-index: -1; background: #0a2818;
+  }
+
+  body { color: #0c3; }
+
+  .app { position: relative; height: 100vh; display: flex; flex-direction: column; }
+
+  .content { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 16px; }
+
+  /* ---------- Reset button ---------- */
+  .reset-btn {
+    position: absolute; top: 16px; right: 16px; z-index: 50;
+    width: 120px; height: 60px; border: none; background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .reset-btn img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+  .reset-btn .fallback {
+    background: #0a7c3a; color: #fff; padding: 10px 16px; border-radius: 10px;
+    font-weight: bold; font-size: 14px; pointer-events: none;
+  }
+
+  /* ---------- Tab 1: Table ---------- */
+  .tab1-wrap { display: flex; flex-direction: column; align-items: center; gap: 24px; padding-top: 60px; }
+  .table { display: inline-block; }
+  .trow { display: flex; align-items: center; }
+  .theader { width: 102px; font-weight: bold; padding: 5px; text-align: center; color: #0c3; }
+  .ticon { width: 28px; height: 28px; object-fit: contain; }
+  .ticon-fallback {
+    width: 28px; height: 28px; border-radius: 50%; background: #0a7c3a; color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold;
+  }
+  .name-input {
+    width: 100px; border: 1px solid green; padding: 8px; margin: 1px;
+    text-align: center; background: rgba(255,255,255,0.2); color: #043; outline: none;
+  }
+  .cell {
+    width: 35px; height: 35px; border: 1px solid green; margin: 0 2px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; user-select: none; background: transparent;
+  }
+  .cell.checked { background: green; }
+  .cell-text { font-weight: bold; font-size: 25px; line-height: 1; }
+
+  /* ---------- Point tracker ---------- */
+  .point-box {
+    background: #e0fff1; border-radius: 12px; width: 300px; max-width: 90vw;
+    padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .point-label { font-size: 25px; font-weight: bold; color: #043; }
+  .point-value {
+    font-size: 96px; font-weight: bold; color: green; line-height: 1;
+    margin: -8px 0; background: none; border: none; cursor: pointer;
+  }
+  .add-btn {
+    background: green; border: none; border-radius: 20px; width: 40px; height: 40px;
+    color: #e0fff1; font-size: 32px; font-weight: bold; cursor: pointer; line-height: 1;
+  }
+
+  /* ---------- Tab 2: Cards ---------- */
+  .filter-icons {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;
+    margin-bottom: 16px;
+  }
+  .filter-icon { cursor: pointer; background: none; border: none; padding: 0; }
+  .filter-icon img, .filter-icon .ic-fallback { width: 50px; height: 50px; object-fit: contain; opacity: 0.4; transition: opacity .15s; }
+  .filter-icon.selected img, .filter-icon.selected .ic-fallback { opacity: 1; }
+  .ic-fallback {
+    border-radius: 50%; background: #0a7c3a; color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px;
+  }
+  .card-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  .card-item { cursor: pointer; border-radius: 8px; overflow: hidden; aspect-ratio: 1; }
+  .card-item img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .card-item .card-fallback {
+    width: 100%; height: 100%; background: #0a7c3a22; border: 1px solid #0a7c3a;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    font-size: 12px; color: #043; padding: 6px; border-radius: 8px;
+  }
+
+  /* ---------- Tab 3: Rulebook ---------- */
+  .pdf-frame { width: 100%; height: 100%; border: none; }
+  .pdf-loading { display: flex; height: 100%; align-items: center; justify-content: center; color: #043; }
+
+  /* ---------- Tab bar ---------- */
+  .tab-bar {
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 8px; gap: 8px;
+  }
+  .tab-button { background: none; border: none; cursor: pointer; padding: 4px; }
+  .tab-button img { height: 60px; width: 60px; object-fit: contain; }
+  .tab-button .tab-fallback {
+    height: 56px; width: 80px; border-radius: 10px; background: #0a7c3a; color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px;
+    opacity: 0.6;
+  }
+  .tab-button.active .tab-fallback { opacity: 1; }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+    display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100;
+  }
+  .modal-overlay[hidden] { display: none; }
+  .modal-box {
+    background: #f7f7f7; border-radius: 12px; padding: 24px; width: 90%; max-width: 400px;
+    display: flex; flex-direction: column; align-items: center; position: relative;
+  }
+  .modal-title { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: #111; }
+  .modal-input {
+    border: 1px solid green; width: 80%; padding: 10px; font-size: 18px;
+    text-align: center; border-radius: 8px; margin-bottom: 20px; outline: none;
+  }
+  .modal-confirm {
+    background: green; color: #fff; border: none; font-weight: bold; font-size: 18px;
+    padding: 10px 40px; border-radius: 12px; cursor: pointer;
+  }
+  .modal-cancel {
+    background: #ccc; color: #222; border: none; font-weight: bold; font-size: 18px;
+    padding: 10px 32px; border-radius: 12px; cursor: pointer;
+  }
+  .modal-message { font-size: 16px; color: #333; text-align: center; margin-bottom: 20px; line-height: 1.4; }
+  .dialog-buttons { display: flex; gap: 12px; }
+  /* number pad */
+  .num-pad { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .num-row { display: flex; gap: 16px; }
+  .num-btn {
+    width: 60px; height: 60px; border-radius: 10px; background: #a4fba6; border: none;
+    font-size: 24px; font-weight: bold; color: green; cursor: pointer;
+  }
+  .num-spacer { width: 60px; }
+
+  /* fullscreen card modal */
+  .fs-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+    display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 200;
+  }
+  .fs-overlay[hidden] { display: none; }
+  .fs-overlay img { max-width: 100%; max-height: 80%; border-radius: 12px; object-fit: contain; }
+  .fs-overlay .card-fallback { width: 60%; height: 60%; font-size: 18px; }
+  .fs-close {
+    position: absolute; top: 40px; right: 20px; background: rgba(255,255,255,0.2);
+    color: #fff; border: none; padding: 10px 16px; border-radius: 20px;
+    font-size: 18px; font-weight: bold; cursor: pointer;
+  }
+
+  /* Landscape tweaks */
+  @media (orientation: landscape) {
+    .tab1-wrap { flex-direction: row; align-items: center; justify-content: center; padding-top: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <video id="bg-video" autoplay loop muted playsinline>
+    <source src="./assets/App_Background_HD.mp4" type="video/mp4" />
+  </video>
+
+  <button class="reset-btn" id="reset-btn" title="Reset Game">
+    <img src="./assets/Buttons/Reset_Button.png" alt="Reset"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+    <span class="fallback" style="display:none;">Reset</span>
+  </button>
+
+  <div class="content" id="content"></div>
+
+  <div class="tab-bar" id="tab-bar"></div>
+</div>
+
+<!-- Add / Override points modal -->
+<div class="modal-overlay" id="points-modal" hidden>
+  <div class="modal-box" id="points-modal-box"></div>
+</div>
+
+<!-- Fullscreen card modal -->
+<div class="fs-overlay" id="fs-modal" hidden>
+  <button class="fs-close" id="fs-close">Close</button>
+  <div id="fs-content"></div>
+</div>
+
+<!-- Generic dialog (confirm / notice) -->
+<div class="modal-overlay" id="dialog-modal" hidden>
+  <div class="modal-box" id="dialog-box"></div>
+</div>
+
+<script>
+/* ============================================================
+   DATA  (mirrors the original abilityImages / ICONS structure)
+   ============================================================ */
+const ICONS = [
+  { key: 'S', label: 'Scorpion', icon: './assets/Scorpion_ICON.png' },
+  { key: 'P', label: 'Poison',   icon: './assets/Poison_ICON.png'   },
+  { key: 'T', label: 'Tree',     icon: './assets/Tree_ICON.png'     },
+  { key: 'W', label: 'Wood',     icon: './assets/Wood_ICON.png'     },
+  { key: 'G', label: 'Glass',    icon: './assets/Glass_ICON.png'    },
+  { key: 'B', label: 'Bull',     icon: './assets/Bull_ICON.png'     },
+  { key: 'H', label: 'Horned',   icon: './assets/Horned_ICON.png'   },
+  { key: 'R', label: 'Rain',     icon: './assets/Rain_ICON.png'     },
+];
+const ICON_KEYS = ICONS.map(i => i.key);
+
+// tags reference icon keys
+const ABILITY_IMAGES = [
+  { src: './assets/Players/Scorpion.png', name: 'Scorpion', tags: ['S'] },
+  { src: './assets/Players/Poison.png',   name: 'Poison',   tags: ['P'] },
+  { src: './assets/Players/Tree.png',     name: 'Tree',     tags: ['T'] },
+  { src: './assets/Players/Wood.png',     name: 'Wood',     tags: ['W'] },
+  { src: './assets/Players/Glass.png',    name: 'Glass',    tags: ['G'] },
+  { src: './assets/Players/Bull.png',     name: 'Bull',     tags: ['B'] },
+  { src: './assets/Players/Horned.png',   name: 'Horned',   tags: ['H'] },
+  { src: './assets/Players/Rain.png',     name: 'Rain',     tags: ['R'] },
+  { src: './assets/Abilities/Ability_Action_Surge.png',    name: 'Action Surge',    tags: ['S','T','W','B','H'] },
+  { src: './assets/Abilities/Ability_Compost_Bin.png',     name: 'Compost Bin',     tags: ['S','T','W','B','H'] },
+  { src: './assets/Abilities/Ability_Deal_Broker.png',     name: 'Deal Broker',     tags: ['S','P','G','B','H'] },
+  { src: './assets/Abilities/Ability_Deflect.png',         name: 'Deflect',         tags: ['S','P','G','B','H'] },
+  { src: './assets/Abilities/Ability_Diversion.png',       name: 'Diversion',       tags: ['S','P','R'] },
+  { src: './assets/Abilities/Ability_Double_Up.png',       name: 'Double Up',       tags: ['S','T','W','R'] },
+  { src: './assets/Abilities/Ability_Elite_Forager.png',   name: 'Elite Forager',   tags: ['S','P','T','W','B'] },
+  { src: './assets/Abilities/Ability_Frog_Charm.png',      name: 'Frog Charm',      tags: ['S','T','W','G','B'] },
+  { src: './assets/Abilities/Ability_Joint_Reward.png',    name: 'Joint Reward',    tags: ['S','P','T','W','R'] },
+  { src: './assets/Abilities/Ability_Keen_Sight.png',      name: 'Keen Sight',      tags: ['S','P','G','B','H'] },
+  { src: './assets/Abilities/Ability_Love_Retrieval.png',  name: 'Love Retrieval',  tags: ['G','B','R'] },
+  { src: './assets/Abilities/Ability_Quick_Draw.png',      name: 'Quick Draw',      tags: ['S','P','G','H','R'] },
+  { src: './assets/Abilities/Ability_Revealer.png',        name: 'Revealer',        tags: ['S','P','W','G','R'] },
+  { src: './assets/Abilities/Ability_Scorpions_Claw.png',  name: "Scorpion's Claw", tags: ['S','P','R'] },
+  { src: './assets/Abilities/Ability_Scramble.png',        name: 'Scramble',        tags: ['S','T','W','H'] },
+  { src: './assets/Abilities/Ability_Spirit_Link.png',     name: 'Spirit Link',     tags: ['S','T','G','H','R'] },
+  { src: './assets/Abilities/Ability_Summoner.png',        name: 'Summoner',        tags: ['S','W','B','R'] },
+  { src: './assets/Abilities/Ability_Truth_Retrieval.png', name: 'Truth Retrieval', tags: ['G','H','R'] },
+  { src: './assets/Abilities/Ability_Poison.png',          name: 'Poison',          tags: ['S','P'] },
+  { src: './assets/Abilities/Ability_Antidote.png',        name: 'Antidote',        tags: ['S','P','T','W','G','B','H','R'] },
+  { src: './assets/Abilities/Ability_Love_Potion.png',     name: 'Love Potion',     tags: ['S','P','T','W','G','B','H','R'] },
+  { src: './assets/Abilities/Ability_Truth_Serum.png',     name: 'Truth Serum',     tags: ['S','P','T','W','G','B','H','R'] },
+];
+
+const TAB_ICONS = [
+  { src: './assets/Buttons/Home_Tab.png',     label: 'Home' },
+  { src: './assets/Buttons/Cards_Tab.png',    label: 'Cards' },
+  { src: './assets/Buttons/Rulebook_Tab.png', label: 'Rules' },
+];
+
+const RULEBOOK_PDF = './assets/App_Rulebook.pdf';
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  activeTab: 1,                                  // 1=table, 2=cards, 3=rulebook
+  playerNames: Array(8).fill(''),
+  // cell values cycle 0 -> 1 (faint X) -> 2 (solid X) -> 3 (check) -> 0
+  tableData: Array.from({ length: 8 }, () => Array(8).fill(0)),
+  points: 0,
+  selectedIcons: [],                             // array of icon keys
+  fullscreenCard: null,                          // index into filtered list
+  modal: null,                                   // null | 'add' | 'override'
+  inputValue: '',
+};
+
+/* ============================================================
+   PERSISTENCE (per-device, private — no backend)
+   Saves only the durable game data, not transient UI state like
+   open dialogs or in-progress input. Wrapped in try/catch so the
+   app still works if storage is unavailable (e.g. iOS private mode).
+   ============================================================ */
+const STORAGE_KEY = 'gameCompanion.v1';
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      playerNames: state.playerNames,
+      tableData: state.tableData,
+      points: state.points,
+      selectedIcons: state.selectedIcons,
+    }));
+  } catch (e) {
+    /* storage full or blocked — fail silently, app keeps working in-memory */
+  }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    // Validate shape before trusting it, so a corrupt/old blob can't break startup.
+    if (Array.isArray(saved.playerNames) && saved.playerNames.length === 8) {
+      state.playerNames = saved.playerNames.map(n => (typeof n === 'string' ? n : ''));
+    }
+    if (Array.isArray(saved.tableData) && saved.tableData.length === 8
+        && saved.tableData.every(row => Array.isArray(row) && row.length === 8)) {
+      state.tableData = saved.tableData.map(row => row.map(v => (Number.isInteger(v) && v >= 0 && v <= 3 ? v : 0)));
+    }
+    if (typeof saved.points === 'number' && saved.points >= 0) {
+      state.points = saved.points;
+    }
+    if (Array.isArray(saved.selectedIcons)) {
+      // keep only icon keys we actually recognize
+      state.selectedIcons = saved.selectedIcons.filter(k => ICON_KEYS.includes(k));
+    }
+  } catch (e) {
+    /* corrupt data — ignore and start fresh */
+  }
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const $ = sel => document.querySelector(sel);
+const el = (tag, props = {}, ...children) => {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'class') node.className = v;
+    else if (k === 'html') node.innerHTML = v;
+    else if (k === 'text') node.textContent = v;
+    else if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
+    else if (v !== null && v !== undefined) node.setAttribute(k, v);
+  }
+  for (const c of children) if (c) node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  return node;
+};
+// image that swaps to a fallback element on error
+const imgOrFallback = (src, imgClass, fallbackNode) => {
+  const wrap = el('span', { style: 'display:contents' });
+  const image = el('img', { src, class: imgClass || '', alt: '' });
+  image.addEventListener('error', () => { image.remove(); wrap.appendChild(fallbackNode); });
+  wrap.appendChild(image);
+  return wrap;
+};
+
+/* ============================================================
+   RENDER: TAB 1 — TABLE + POINT TRACKER
+   ============================================================ */
+function renderTable() {
+  const wrap = el('div', { class: 'tab1-wrap' });
+
+  const table = el('div', { class: 'table' });
+
+  // header row
+  const header = el('div', { class: 'trow' });
+  header.appendChild(el('div', { class: 'theader', text: 'Player Name' }));
+  ICONS.forEach(ic => {
+    const cell = el('div', { class: 'cell', style: 'border:none' });
+    cell.appendChild(imgOrFallback(ic.icon, 'ticon', el('div', { class: 'ticon-fallback', text: ic.key })));
+    header.appendChild(cell);
+  });
+  table.appendChild(header);
+
+  // player rows
+  state.playerNames.forEach((name, r) => {
+    const row = el('div', { class: 'trow' });
+    row.appendChild(el('input', {
+      class: 'name-input',
+      placeholder: `Player ${r + 1}`,
+      value: name,
+      oninput: e => { state.playerNames[r] = e.target.value; saveState(); },
+    }));
+    ICONS.forEach((_, c) => {
+      const v = state.tableData[r][c];
+      const cell = el('div', { class: 'cell' + (v === 3 ? ' checked' : '') });
+      const t = el('span', { class: 'cell-text' });
+      if (v === 1) { t.textContent = 'X'; t.style.opacity = 0.2; }
+      else if (v === 2) { t.textContent = 'X'; t.style.opacity = 1; }
+      else if (v === 3) { t.textContent = '✓'; t.style.color = 'black'; }
+      cell.appendChild(t);
+      cell.addEventListener('click', () => {
+        state.tableData[r][c] = (state.tableData[r][c] + 1) % 4;
+        render();
+      });
+      row.appendChild(cell);
+    });
+    table.appendChild(row);
+  });
+
+  wrap.appendChild(table);
+
+  // point tracker
+  const box = el('div', { class: 'point-box' });
+  box.appendChild(el('div', { class: 'point-label', text: 'Point Total' }));
+  box.appendChild(el('button', { class: 'point-value', text: String(state.points), onclick: openOverride }));
+  box.appendChild(el('button', { class: 'add-btn', text: '+', onclick: openAddPoints }));
+  wrap.appendChild(box);
+
+  return wrap;
+}
+
+/* ============================================================
+   RENDER: TAB 2 — CARD BROWSER
+   ============================================================ */
+function getFilteredImages() {
+  const sel = state.selectedIcons;
+  if (sel.length === 0 || sel.length === ICONS.length) return ABILITY_IMAGES;
+  return ABILITY_IMAGES.filter(img => img.tags.some(t => sel.includes(t)));
+}
+
+function renderCards() {
+  const wrap = el('div');
+
+  // filter icons
+  const filterRow = el('div', { class: 'filter-icons' });
+  ICONS.forEach(ic => {
+    const selected = state.selectedIcons.includes(ic.key);
+    const btn = el('button', { class: 'filter-icon' + (selected ? ' selected' : '') });
+    btn.appendChild(imgOrFallback(ic.icon, '', el('div', { class: 'ic-fallback', text: ic.key })));
+    btn.addEventListener('click', () => {
+      state.selectedIcons = selected
+        ? state.selectedIcons.filter(k => k !== ic.key)
+        : [...state.selectedIcons, ic.key];
+      render();
+    });
+    filterRow.appendChild(btn);
+  });
+  wrap.appendChild(filterRow);
+
+  // card grid
+  const filtered = getFilteredImages();
+  const grid = el('div', { class: 'card-grid' });
+  filtered.forEach((card, i) => {
+    const item = el('div', { class: 'card-item', onclick: () => { state.fullscreenCard = i; render(); } });
+    item.appendChild(imgOrFallback(card.src, '', el('div', { class: 'card-fallback', text: card.name })));
+    grid.appendChild(item);
+  });
+  wrap.appendChild(grid);
+
+  return wrap;
+}
+
+/* ============================================================
+   RENDER: TAB 3 — RULEBOOK
+   ============================================================ */
+function renderRulebook() {
+  const wrap = el('div', { style: 'height:100%' });
+  const frame = el('iframe', { class: 'pdf-frame', src: RULEBOOK_PDF });
+  // if PDF can't load, the iframe simply shows the browser's own message;
+  // provide a graceful link fallback as well
+  const note = el('div', { class: 'pdf-loading' });
+  note.appendChild(el('a', { href: RULEBOOK_PDF, target: '_blank', text: 'Open rulebook PDF', style: 'color:#0a7c3a' }));
+  wrap.appendChild(frame);
+  wrap.appendChild(note);
+  return wrap;
+}
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+function openAddPoints() { state.modal = 'add'; state.inputValue = ''; render(); }
+function openOverride()  { state.modal = 'override'; render(); }
+function closeModal()     { state.modal = null; render(); }
+
+/* Generic in-page dialogs (replace native alert/confirm so they work
+   reliably on every browser, including mobile Safari). */
+function closeDialog() {
+  const overlay = $('#dialog-modal');
+  overlay.hidden = true;
+  $('#dialog-box').innerHTML = '';
+}
+
+function showNotice(title, message) {
+  const box = $('#dialog-box');
+  box.innerHTML = '';
+  box.appendChild(el('div', { class: 'modal-title', text: title }));
+  if (message) box.appendChild(el('div', { class: 'modal-message', text: message }));
+  box.appendChild(el('button', { class: 'modal-confirm', text: 'OK', onclick: closeDialog }));
+  $('#dialog-modal').hidden = false;
+}
+
+function showConfirm(title, message, onConfirm) {
+  const box = $('#dialog-box');
+  box.innerHTML = '';
+  box.appendChild(el('div', { class: 'modal-title', text: title }));
+  if (message) box.appendChild(el('div', { class: 'modal-message', text: message }));
+  const row = el('div', { class: 'dialog-buttons' });
+  row.appendChild(el('button', { class: 'modal-cancel', text: 'Cancel', onclick: closeDialog }));
+  row.appendChild(el('button', { class: 'modal-confirm', text: 'Reset', onclick: () => { closeDialog(); onConfirm(); } }));
+  box.appendChild(row);
+  $('#dialog-modal').hidden = false;
+}
+
+function handleAddPoints() {
+  const added = parseInt(state.inputValue || '0', 10);
+  if (isNaN(added)) { showNotice('Invalid input', 'Please enter a number.'); return; }
+  const total = state.points + added;
+  const cardsToDraw = Math.floor(total / 10);
+  state.points = total % 10;
+  state.modal = null; state.inputValue = '';
+  render();
+  if (cardsToDraw > 0) {
+    showNotice('Ancient Ability Learned!', `Draw ${cardsToDraw} Ancient Ability card${cardsToDraw > 1 ? 's' : ''}`);
+  }
+}
+
+function handleOverride(num) { state.points = num; state.modal = null; render(); }
+
+function renderPointsModal() {
+  const box = $('#points-modal-box');
+  box.innerHTML = '';
+  const overlay = $('#points-modal');
+
+  if (!state.modal) { overlay.hidden = true; return; }
+  overlay.hidden = false;
+
+  if (state.modal === 'override') {
+    box.appendChild(el('div', { class: 'modal-title', text: 'Points Override' }));
+    const pad = el('div', { class: 'num-pad' });
+    [[1,2,3],[4,5,6],[7,8,9]].forEach(rowNums => {
+      const row = el('div', { class: 'num-row' });
+      rowNums.forEach(n => row.appendChild(el('button', { class: 'num-btn', text: String(n), onclick: () => handleOverride(n) })));
+      pad.appendChild(row);
+    });
+    // last row: 0 centered
+    const last = el('div', { class: 'num-row' });
+    last.appendChild(el('div', { class: 'num-spacer' }));
+    last.appendChild(el('button', { class: 'num-btn', text: '0', onclick: () => handleOverride(0) }));
+    last.appendChild(el('div', { class: 'num-spacer' }));
+    pad.appendChild(last);
+    box.appendChild(pad);
+  } else { // add
+    box.appendChild(el('div', { class: 'modal-title', text: 'Enter points to add:' }));
+    const input = el('input', {
+      class: 'modal-input', type: 'number', inputmode: 'numeric', value: state.inputValue,
+      oninput: e => { state.inputValue = e.target.value; },
+    });
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') handleAddPoints(); });
+    box.appendChild(input);
+    box.appendChild(el('button', { class: 'modal-confirm', text: 'Confirm', onclick: handleAddPoints }));
+    // focus the field
+    setTimeout(() => input.focus(), 0);
+  }
+}
+
+function renderFullscreen() {
+  const overlay = $('#fs-modal');
+  const content = $('#fs-content');
+  content.innerHTML = '';
+  if (state.fullscreenCard === null) { overlay.hidden = true; return; }
+  const filtered = getFilteredImages();
+  const card = filtered[state.fullscreenCard];
+  if (!card) { overlay.hidden = true; return; }
+  overlay.hidden = false;
+  content.appendChild(imgOrFallback(card.src, '', el('div', { class: 'card-fallback', text: card.name })));
+}
+
+/* ============================================================
+   TAB BAR + ROOT RENDER
+   ============================================================ */
+function renderTabBar() {
+  const bar = $('#tab-bar');
+  bar.innerHTML = '';
+  TAB_ICONS.forEach((t, i) => {
+    const active = state.activeTab === i + 1;
+    const btn = el('button', { class: 'tab-button' + (active ? ' active' : ''), onclick: () => { state.activeTab = i + 1; render(); } });
+    btn.appendChild(imgOrFallback(t.src, '', el('div', { class: 'tab-fallback', text: t.label })));
+    bar.appendChild(btn);
+  });
+}
+
+function render() {
+  const content = $('#content');
+  content.innerHTML = '';
+  if (state.activeTab === 1) content.appendChild(renderTable());
+  else if (state.activeTab === 2) content.appendChild(renderCards());
+  else if (state.activeTab === 3) content.appendChild(renderRulebook());
+
+  // reset button only on tab 1
+  $('#reset-btn').style.display = state.activeTab === 1 ? 'flex' : 'none';
+
+  renderTabBar();
+  renderPointsModal();
+  renderFullscreen();
+
+  // Persist durable game data after every state-changing render.
+  saveState();
+}
+
+/* ============================================================
+   GLOBAL EVENTS
+   ============================================================ */
+$('#reset-btn').addEventListener('click', () => {
+  showConfirm('Reset Game?', 'Are you sure you want to start a new game?', () => {
+    state.playerNames = Array(8).fill('');
+    state.tableData = Array.from({ length: 8 }, () => Array(8).fill(0));
+    state.points = 0;
+    render();
+  });
+});
+
+$('#points-modal').addEventListener('click', e => { if (e.target.id === 'points-modal') closeModal(); });
+$('#dialog-modal').addEventListener('click', e => { if (e.target.id === 'dialog-modal') closeDialog(); });
+$('#fs-close').addEventListener('click', () => { state.fullscreenCard = null; render(); });
+$('#fs-modal').addEventListener('click', e => { if (e.target.id === 'fs-modal') { state.fullscreenCard = null; render(); } });
+
+loadState();
+render();
+</script>
+</body>
+</html>
