@@ -26,6 +26,8 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  /* Lock the page itself: no page-level scroll or rubber-band bounce. */
+  html, body { overflow: hidden; overscroll-behavior: none; }
 
   /* Background video with dark fallback */
   #bg-video {
@@ -43,7 +45,7 @@
   }
 
   .content {
-    flex: 1; overflow: auto; -webkit-overflow-scrolling: touch;
+    flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
     /* Keep content clear of the notch/corners, and leave room for the fixed tab bar. */
     padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
              calc(var(--tab-sz) + 28px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
@@ -63,8 +65,9 @@
   }
 
   /* ---------- Tab 1: Table ---------- */
-  /* Center the table + point box vertically and horizontally in the content area */
-  .content.tab-1 { display: flex; }
+  /* Center the table + point box vertically and horizontally in the content area.
+     overflow:hidden locks the home display so it never moves/scrolls on a swipe. */
+  .content.tab-1 { display: flex; overflow: hidden; }
   .content.tab-1 > .tab1-wrap { margin: auto; }
   .tab1-wrap { display: flex; flex-direction: column; align-items: center; gap: clamp(8px, 2vh, 24px); padding: 8px 0; }
   .table { display: inline-block; }
@@ -834,25 +837,21 @@ $('#fs-modal').addEventListener('touchend', e => {
   render();
 });
 
-// Tab ribbon: hide on swipe-down, reveal on swipe-up (incl. from the bottom edge).
+// Tab ribbon: a vertical swipe ANYWHERE on screen toggles it (down = hide, up =
+// reveal). Only the ribbon moves — the display never scrolls (locked above).
+// Horizontal swipes are ignored here so fullscreen card navigation still works.
 const tabBarEl = $('#tab-bar');
-let tabSwipeY = null, edgeSwipeY = null;
-tabBarEl.addEventListener('touchstart', e => { tabSwipeY = e.touches[0].clientY; }, { passive: true });
-tabBarEl.addEventListener('touchend', e => {
-  if (tabSwipeY === null) return;
-  const dy = e.changedTouches[0].clientY - tabSwipeY; tabSwipeY = null;
-  if (dy > 30) tabBarEl.classList.add('hidden');
-  else if (dy < -30) tabBarEl.classList.remove('hidden');
-}, { passive: true });
+let swipeStartX = null, swipeStartY = null;
 document.addEventListener('touchstart', e => {
-  if (!tabBarEl.classList.contains('hidden')) { edgeSwipeY = null; return; }
-  const y = e.touches[0].clientY;
-  edgeSwipeY = (window.innerHeight - y < 50) ? y : null;   // only near the bottom edge
+  swipeStartX = e.touches[0].clientX; swipeStartY = e.touches[0].clientY;
 }, { passive: true });
 document.addEventListener('touchend', e => {
-  if (edgeSwipeY === null) return;
-  const dy = e.changedTouches[0].clientY - edgeSwipeY; edgeSwipeY = null;
-  if (dy < -30) tabBarEl.classList.remove('hidden');
+  if (swipeStartY === null) return;
+  const dx = e.changedTouches[0].clientX - swipeStartX;
+  const dy = e.changedTouches[0].clientY - swipeStartY;
+  swipeStartX = swipeStartY = null;
+  if (Math.abs(dy) < 40 || Math.abs(dy) <= Math.abs(dx)) return;  // need a clear vertical swipe
+  tabBarEl.classList.toggle('hidden', dy > 0);                    // down hides, up reveals
 }, { passive: true });
 
 loadState();
