@@ -29,10 +29,11 @@
 
   /* Background video with dark fallback */
   #bg-video {
-    position: fixed; inset: 0; width: 100%; height: 100%;
-    object-fit: cover; z-index: -1; background: #0a2818;
+    position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100lvh;
+    object-fit: cover; object-position: center; z-index: -1; background: #0a2818;
   }
 
+  html, body { background: #0a2818; }
   body { color: #0c3; }
 
   .app {
@@ -58,13 +59,21 @@
   }
 
   /* ---------- Tab 1: Table ---------- */
-  .tab1-wrap { display: flex; flex-direction: column; align-items: center; gap: clamp(8px, 2vh, 24px); padding-top: clamp(48px, 7vh, 70px); }
+  /* Center the table + point box vertically and horizontally in the content area */
+  .content.tab-1 { display: flex; }
+  .content.tab-1 > .tab1-wrap { margin: auto; }
+  .tab1-wrap { display: flex; flex-direction: column; align-items: center; gap: clamp(8px, 2vh, 24px); padding: 8px 0; }
   .table { display: inline-block; }
   .trow { display: flex; align-items: center; }
   .theader {
-    width: var(--name-w); font-weight: bold; padding: 5px; text-align: center; color: #043;
+    width: var(--name-w); margin: 1px; box-sizing: border-box;
+    font-weight: bold; padding: clamp(4px, 1.4vw, 6px); text-align: center; color: #043;
     background: rgba(255,255,255,0.82); border-radius: 6px;
+    font-size: clamp(9px, 2.4vw, 11px); line-height: 1.1;
   }
+  /* Header type-icons: thicker green box so they read as part of the table.
+     Uses .cell.icon-cell to beat .cell's own 1px border (defined later). */
+  .cell.icon-cell { border: 2px solid green; border-radius: 4px; }
   .ticon { width: var(--ticon); height: var(--ticon); object-fit: contain; }
   .ticon-fallback {
     width: var(--ticon); height: var(--ticon); border-radius: 50%; background: #0a7c3a; color: #fff;
@@ -139,12 +148,21 @@
     padding: 10px 22px; border-radius: 10px; text-decoration: none; font-size: 16px;
     border: 1px solid #0a7c3a;
   }
-  .pdf-frame { width: 100%; flex: 1 1 auto; min-height: 0; border: none; border-radius: 8px; background: #fff; }
+  .pdf-pages {
+    flex: 1 1 auto; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    background: #fff; border-radius: 8px; padding: 10px;
+  }
+  .pdf-page { width: 100%; max-width: 900px; height: auto; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  .pdf-loading { color: #043; padding: 24px; text-align: center; }
 
   /* ---------- Tab bar ---------- */
   .tab-bar {
     display: flex; justify-content: space-around; align-items: center;
     padding: 8px; gap: 8px;
+    background: rgba(10, 40, 24, 0.45);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
   .tab-button { background: none; border: none; cursor: pointer; padding: 4px; }
   .tab-button img { height: var(--tab-sz); width: var(--tab-sz); object-fit: contain; }
@@ -220,25 +238,28 @@
   /* Landscape on small phones: cells were sized by vw (now the wide axis),
      so switch to vh-based sizing to fit 9 rows in the short screen height. */
   @media (orientation: landscape) and (max-height: 600px) {
+    /* Size cells off height so the 9 rows grow to fill the short landscape screen */
     :root {
-      --cell:      clamp(20px, 5vh, 30px);   /* 375px tall → 18.75px → 20px min */
-      --name-w:    clamp(56px, 13vw, 85px);
-      --cell-font: clamp(11px, 2.8vh, 18px);
-      --ticon:     clamp(16px, 4vh, 26px);
+      --cell:      clamp(22px, 7.5vh, 48px);
+      --name-w:    clamp(56px, 12vw, 90px);
+      --cell-font: clamp(12px, 3.5vh, 24px);
+      --ticon:     clamp(18px, 5vh, 30px);
       --tab-sz:    clamp(36px, 9vw, 52px);
     }
-    .tab1-wrap  { padding-top: 8px !important; gap: 6px !important; }
-    /* Collapse input padding so rows match cell height (~20px) not input natural height (~36px) */
-    .name-input { padding: 2px 4px !important; font-size: 11px !important; }
-    .point-box  { width: clamp(150px, 30vw, 240px) !important; padding: 8px !important; }
-    .point-value { font-size: clamp(36px, min(12vw, 9vh), 72px) !important; margin: 0 !important; }
+    /* stretch makes the point box match the table's height = tall vertical widget */
+    .tab1-wrap  { padding: 6px 0 !important; gap: 14px !important; align-items: stretch !important; }
+    .name-input { padding: 2px 4px !important; font-size: clamp(10px, 2.6vh, 14px) !important; }
+    .point-box  {
+      width: clamp(110px, 24vw, 170px) !important; padding: 10px !important;
+      align-self: stretch !important; justify-content: center !important;
+    }
+    .point-value { font-size: clamp(40px, min(14vw, 16vh), 90px) !important; margin: 0 !important; }
     .point-label { font-size: clamp(13px, 3vh, 18px) !important; }
-    .add-btn    { width: 32px !important; height: 32px !important; font-size: 22px !important; }
+    .add-btn    { width: 34px !important; height: 34px !important; font-size: 22px !important; }
   }
 
   /* ---------- Wide screens (tablet / desktop) ---------- */
   @media (min-width: 640px) {
-    .tab1-wrap { padding-top: 32px; }
     /* Centre the score table with breathing room on sides */
     .tab1-wrap > .table { margin: 0 auto; }
   }
@@ -450,7 +471,7 @@ function renderTable() {
   const header = el('div', { class: 'trow' });
   header.appendChild(el('div', { class: 'theader', text: 'Player Name' }));
   ICONS.forEach(ic => {
-    const cell = el('div', { class: 'cell', style: 'border:none' });
+    const cell = el('div', { class: 'cell icon-cell' });
     cell.appendChild(imgOrFallback(ic.icon, 'ticon', el('div', { class: 'ticon-fallback', text: ic.key })));
     header.appendChild(cell);
   });
@@ -549,12 +570,70 @@ function renderCards() {
 /* ============================================================
    RENDER: TAB 3 — RULEBOOK
    ============================================================ */
+/* The rulebook is rendered page-by-page with pdf.js into a scrollable column.
+   This is necessary because iOS Safari only shows the first page of a PDF in an
+   <iframe>/<embed>. pdf.js is loaded lazily from a CDN (the one external
+   dependency, added deliberately to make the in-page preview scrollable).
+   Rendered pages are cached so re-visiting the tab is instant. */
+let rulebookPagesHTML = null;   // cached <img> markup of rendered pages
+let rulebookRendering = false;
+
+function ensurePdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve(window.pdfjsLib);
+    };
+    s.onerror = () => reject(new Error('pdf.js failed to load'));
+    document.head.appendChild(s);
+  });
+}
+
+async function loadRulebook(container) {
+  if (rulebookRendering) return;
+  rulebookRendering = true;
+  try {
+    const pdfjsLib = await ensurePdfJs();
+    const pdf = await pdfjsLib.getDocument(RULEBOOK_PDF).promise;
+    const targetW = Math.min((container.clientWidth || 800) - 20, 1000);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const imgs = [];
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const base = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: (targetW / base.width) * dpr });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width; canvas.height = viewport.height;
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      imgs.push('<img class="pdf-page" alt="Page ' + p + '" src="' + canvas.toDataURL('image/jpeg', 0.85) + '" />');
+    }
+    rulebookPagesHTML = imgs.join('');
+    const live = document.getElementById('pdf-pages');
+    if (live) live.innerHTML = rulebookPagesHTML;
+  } catch (e) {
+    const live = document.getElementById('pdf-pages');
+    if (live) live.innerHTML = '<div class="pdf-loading">Preview unavailable — use the “Open Rulebook PDF” button above.</div>';
+  } finally {
+    rulebookRendering = false;
+  }
+}
+
 function renderRulebook() {
   const wrap = el('div', { class: 'rulebook-wrap' });
-  // The button is the first thing visible; the embedded preview sits below it
-  // and lets you scroll through each page.
+  // Button is the first thing visible; the scrollable page preview sits below it.
   wrap.appendChild(el('a', { class: 'pdf-open-btn', href: RULEBOOK_PDF, target: '_blank', text: 'Open Rulebook PDF' }));
-  wrap.appendChild(el('iframe', { class: 'pdf-frame', src: RULEBOOK_PDF }));
+  const pages = el('div', { class: 'pdf-pages', id: 'pdf-pages' });
+  if (rulebookPagesHTML) {
+    pages.innerHTML = rulebookPagesHTML;            // cached — instant
+  } else {
+    pages.appendChild(el('div', { class: 'pdf-loading', text: 'Loading rulebook…' }));
+    setTimeout(() => loadRulebook(pages), 0);       // render after it's in the DOM (needs clientWidth)
+  }
+  wrap.appendChild(pages);
   return wrap;
 }
 
@@ -686,6 +765,7 @@ function renderTabBar() {
 
 function render() {
   const content = $('#content');
+  content.className = 'content tab-' + state.activeTab;  // enables per-tab layout (e.g. centering tab 1)
   content.innerHTML = '';
   if (state.activeTab === 1) content.appendChild(renderTable());
   else if (state.activeTab === 2) content.appendChild(renderCards());
@@ -740,6 +820,14 @@ $('#fs-modal').addEventListener('touchend', e => {
 
 loadState();
 render();
+
+// Warm the cache with full-res card art during idle time so fullscreen views
+// open instantly. Deferred so it doesn't compete with first paint.
+function preloadHiRes() {
+  ABILITY_IMAGES.forEach(card => { const img = new Image(); img.src = card.src; });
+}
+if ('requestIdleCallback' in window) requestIdleCallback(preloadHiRes, { timeout: 4000 });
+else setTimeout(preloadHiRes, 2000);
 </script>
 </body>
 </html>
