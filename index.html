@@ -44,9 +44,9 @@
 
   .content {
     flex: 1; overflow: auto; -webkit-overflow-scrolling: touch;
-    /* Keep content clear of the notch / rounded corners (esp. landscape) */
+    /* Keep content clear of the notch/corners, and leave room for the fixed tab bar. */
     padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
-             16px max(16px, env(safe-area-inset-left));
+             calc(var(--tab-sz) + 28px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   }
 
   /* ---------- Reset button ---------- */
@@ -74,7 +74,7 @@
   .theader {
     width: var(--name-w); height: var(--cell); margin: 0 1px; box-sizing: border-box;
     display: flex; align-items: center; justify-content: center; text-align: center;
-    font-weight: bold; color: #0c3; background: rgba(255,255,255,0.82); border-radius: 6px;
+    font-weight: bold; color: #043; background: rgba(255,255,255,0.82); border-radius: 6px;
     font-size: clamp(9px, 2.4vw, 12px); line-height: 1.02; overflow: hidden; padding: 0 2px;
   }
   /* Header type-icons: thicker green box so they read as part of the table.
@@ -165,12 +165,20 @@
   .pdf-loading { color: #043; padding: 24px; text-align: center; }
 
   /* ---------- Tab bar ---------- */
-  /* Translucent ribbon sitting only behind the tab buttons, across the bottom. */
+  /* Translucent ribbon locked to the bottom; slides away on swipe-down. */
   .tab-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
     display: flex; justify-content: space-around; align-items: center;
-    padding: 8px; gap: 8px;
+    padding: 14px 8px 8px; gap: 8px;
     background: rgba(0, 0, 0, 0.35);
     padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    transition: transform 0.3s ease;
+  }
+  .tab-bar.hidden { transform: translateY(100%); }
+  /* little grab handle to signal it's swipeable */
+  .tab-bar::before {
+    content: ''; position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
+    width: 40px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.5);
   }
   .tab-button { background: none; border: none; cursor: pointer; padding: 4px; }
   .tab-button img { height: var(--tab-sz); width: var(--tab-sz); object-fit: contain; }
@@ -245,8 +253,9 @@
 
   /* Landscape on small phones: cells were sized by vw (now the wide axis),
      so switch to vh-based sizing to fit 9 rows in the short screen height. */
-  @media (orientation: landscape) and (max-height: 600px) {
-    /* Size cells off height so the 9 rows grow to fill the short landscape screen */
+  /* All landscape (phones, tablets, desktop): vertical point widget, table fills. */
+  @media (orientation: landscape) {
+    /* Size cells off height so the 9 rows grow to fill the landscape screen */
     :root {
       --cell:      clamp(22px, 7.5vh, 48px);
       --name-w:    clamp(56px, 12vw, 90px);
@@ -824,6 +833,27 @@ $('#fs-modal').addEventListener('touchend', e => {
   state.fullscreenCard = dx < 0 ? (state.fullscreenCard + 1) % total : (state.fullscreenCard - 1 + total) % total;
   render();
 });
+
+// Tab ribbon: hide on swipe-down, reveal on swipe-up (incl. from the bottom edge).
+const tabBarEl = $('#tab-bar');
+let tabSwipeY = null, edgeSwipeY = null;
+tabBarEl.addEventListener('touchstart', e => { tabSwipeY = e.touches[0].clientY; }, { passive: true });
+tabBarEl.addEventListener('touchend', e => {
+  if (tabSwipeY === null) return;
+  const dy = e.changedTouches[0].clientY - tabSwipeY; tabSwipeY = null;
+  if (dy > 30) tabBarEl.classList.add('hidden');
+  else if (dy < -30) tabBarEl.classList.remove('hidden');
+}, { passive: true });
+document.addEventListener('touchstart', e => {
+  if (!tabBarEl.classList.contains('hidden')) { edgeSwipeY = null; return; }
+  const y = e.touches[0].clientY;
+  edgeSwipeY = (window.innerHeight - y < 50) ? y : null;   // only near the bottom edge
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  if (edgeSwipeY === null) return;
+  const dy = e.changedTouches[0].clientY - edgeSwipeY; edgeSwipeY = null;
+  if (dy < -30) tabBarEl.classList.remove('hidden');
+}, { passive: true });
 
 loadState();
 render();
