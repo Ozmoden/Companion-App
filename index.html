@@ -61,7 +61,10 @@
   .tab1-wrap { display: flex; flex-direction: column; align-items: center; gap: clamp(8px, 2vh, 24px); padding-top: clamp(48px, 7vh, 70px); }
   .table { display: inline-block; }
   .trow { display: flex; align-items: center; }
-  .theader { width: var(--name-w); font-weight: bold; padding: 5px; text-align: center; color: #0c3; }
+  .theader {
+    width: var(--name-w); font-weight: bold; padding: 5px; text-align: center; color: #043;
+    background: rgba(255,255,255,0.82); border-radius: 6px;
+  }
   .ticon { width: var(--ticon); height: var(--ticon); object-fit: contain; }
   .ticon-fallback {
     width: var(--ticon); height: var(--ticon); border-radius: 50%; background: #0a7c3a; color: #fff;
@@ -77,11 +80,13 @@
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; user-select: none; background: transparent;
   }
+  .cell.x-red { background: #d62828; }
   .cell.checked { background: green; }
-  .cell-text { font-weight: bold; font-size: var(--cell-font); line-height: 1; }
+  .cell-text { font-weight: bold; font-size: var(--cell-font); line-height: 1; color: #000; }
 
   /* ---------- Point tracker ---------- */
   .point-box {
+    position: relative;
     background: #e0fff1; border-radius: 12px; width: clamp(220px, 80vw, 300px);
     padding: clamp(8px, 2vh, 16px); display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
@@ -92,9 +97,11 @@
     margin: -4px 0; background: none; border: none; cursor: pointer;
   }
   .add-btn {
-    background: green; border: none; border-radius: 20px;
-    width: clamp(32px, 8vw, 48px); height: clamp(32px, 8vw, 48px);
-    color: #e0fff1; font-size: clamp(22px, 6vw, 36px); font-weight: bold; cursor: pointer; line-height: 1;
+    position: absolute; right: 12px; bottom: 12px;
+    background: green; border: none; border-radius: 50%; padding: 0;
+    width: clamp(34px, 9vw, 48px); height: clamp(34px, 9vw, 48px);
+    color: #e0fff1; font-size: clamp(22px, 6vw, 34px); font-weight: bold; cursor: pointer; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
   }
 
   /* ---------- Tab 2: Cards ---------- */
@@ -126,8 +133,13 @@
   }
 
   /* ---------- Tab 3: Rulebook ---------- */
-  .pdf-frame { width: 100%; height: 100%; border: none; }
-  .pdf-loading { display: flex; height: 100%; align-items: center; justify-content: center; color: #043; }
+  .rulebook-wrap { display: flex; flex-direction: column; height: 100%; gap: 12px; }
+  .pdf-open-btn {
+    align-self: center; background: #e0fff1; color: #000; font-weight: bold;
+    padding: 10px 22px; border-radius: 10px; text-decoration: none; font-size: 16px;
+    border: 1px solid #0a7c3a;
+  }
+  .pdf-frame { width: 100%; flex: 1 1 auto; min-height: 0; border: none; border-radius: 8px; background: #fff; }
 
   /* ---------- Tab bar ---------- */
   .tab-bar {
@@ -184,13 +196,21 @@
     display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 200;
   }
   .fs-overlay[hidden] { display: none; }
-  .fs-overlay img { max-width: 100%; max-height: 80%; border-radius: 12px; object-fit: contain; }
+  .fs-overlay img { max-width: 92vw; max-height: 88vh; border-radius: 12px; object-fit: contain; }
   .fs-overlay .card-fallback { width: 60%; height: 60%; font-size: 18px; }
   .fs-close {
     position: absolute; top: 40px; right: 20px; background: rgba(255,255,255,0.2);
     color: #fff; border: none; padding: 10px 16px; border-radius: 20px;
-    font-size: 18px; font-weight: bold; cursor: pointer;
+    font-size: 18px; font-weight: bold; cursor: pointer; z-index: 2;
   }
+  .fs-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(255,255,255,0.22); color: #fff; border: none;
+    width: 52px; height: 84px; font-size: 40px; line-height: 1; cursor: pointer;
+    border-radius: 10px; display: flex; align-items: center; justify-content: center; z-index: 2;
+  }
+  .fs-prev { left: 10px; }
+  .fs-next { right: 10px; }
 
   /* ---------- Landscape ---------- */
   @media (orientation: landscape) {
@@ -199,7 +219,7 @@
 
   /* Landscape on small phones: cells were sized by vw (now the wide axis),
      so switch to vh-based sizing to fit 9 rows in the short screen height. */
-  @media (orientation: landscape) and (max-height: 500px) {
+  @media (orientation: landscape) and (max-height: 600px) {
     :root {
       --cell:      clamp(20px, 5vh, 30px);   /* 375px tall → 18.75px → 20px min */
       --name-w:    clamp(56px, 13vw, 85px);
@@ -336,7 +356,7 @@ const state = {
    open dialogs or in-progress input. Wrapped in try/catch so the
    app still works if storage is unavailable (e.g. iOS private mode).
    ============================================================ */
-const STORAGE_KEY = 'gameCompanion.v1';
+const STORAGE_KEY = 'gameCompanion.v2';
 
 function saveState() {
   try {
@@ -362,7 +382,7 @@ function loadState() {
     }
     if (Array.isArray(saved.tableData) && saved.tableData.length === 8
         && saved.tableData.every(row => Array.isArray(row) && row.length === 8)) {
-      state.tableData = saved.tableData.map(row => row.map(v => (Number.isInteger(v) && v >= 0 && v <= 3 ? v : 0)));
+      state.tableData = saved.tableData.map(row => row.map(v => (Number.isInteger(v) && v >= 0 && v <= 4 ? v : 0)));
     }
     if (typeof saved.points === 'number' && saved.points >= 0) {
       state.points = saved.points;
@@ -400,6 +420,23 @@ const imgOrFallback = (src, imgClass, fallbackNode) => {
   wrap.appendChild(image);
   return wrap;
 };
+// Compressed JPG thumbnail path (same basename) for a card's original PNG src.
+function thumbSrc(src) {
+  const file = src.split('/').pop().replace(/\.png$/i, '.jpg');
+  return './assets/Compressed%20Assets/' + file;
+}
+// Card grid thumbnail: load fast compressed JPG, fall back to original PNG, then text.
+function cardThumb(card) {
+  const wrap = el('span', { style: 'display:contents' });
+  const image = el('img', { src: thumbSrc(card.src), alt: '' });
+  let stage = 0;
+  image.addEventListener('error', () => {
+    if (stage === 0) { stage = 1; image.src = card.src; }
+    else { image.remove(); wrap.appendChild(el('div', { class: 'card-fallback', text: card.name })); }
+  });
+  wrap.appendChild(image);
+  return wrap;
+}
 
 /* ============================================================
    RENDER: TAB 1 — TABLE + POINT TRACKER
@@ -422,22 +459,33 @@ function renderTable() {
   // player rows
   state.playerNames.forEach((name, r) => {
     const row = el('div', { class: 'trow' });
-    row.appendChild(el('input', {
+    const nameInput = el('input', {
       class: 'name-input',
       placeholder: `Player ${r + 1}`,
       value: name,
       oninput: e => { state.playerNames[r] = e.target.value; saveState(); },
-    }));
+    });
+    // Enter key advances focus to the next player-name field.
+    nameInput.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const inputs = Array.from(document.querySelectorAll('.name-input'));
+      const idx = inputs.indexOf(e.target);
+      if (idx > -1 && idx < inputs.length - 1) inputs[idx + 1].focus();
+      else e.target.blur();
+    });
+    row.appendChild(nameInput);
     ICONS.forEach((_, c) => {
       const v = state.tableData[r][c];
-      const cell = el('div', { class: 'cell' + (v === 3 ? ' checked' : '') });
+      // states: 0 blank | 1 X (transparent) | 2 X (red bg) | 3 ✓ (transparent) | 4 ✓ (green bg)
+      const cls = 'cell' + (v === 2 ? ' x-red' : '') + (v === 4 ? ' checked' : '');
+      const cell = el('div', { class: cls });
       const t = el('span', { class: 'cell-text' });
-      if (v === 1) { t.textContent = 'X'; t.style.opacity = 0.2; }
-      else if (v === 2) { t.textContent = 'X'; t.style.opacity = 1; }
-      else if (v === 3) { t.textContent = '✓'; t.style.color = 'black'; }
+      if (v === 1 || v === 2) t.textContent = 'X';
+      else if (v === 3 || v === 4) t.textContent = '✓';
       cell.appendChild(t);
       cell.addEventListener('click', () => {
-        state.tableData[r][c] = (state.tableData[r][c] + 1) % 4;
+        state.tableData[r][c] = (state.tableData[r][c] + 1) % 5;
         render();
       });
       row.appendChild(cell);
@@ -490,7 +538,7 @@ function renderCards() {
   const grid = el('div', { class: 'card-grid' });
   filtered.forEach((card, i) => {
     const item = el('div', { class: 'card-item', onclick: () => { state.fullscreenCard = i; render(); } });
-    item.appendChild(imgOrFallback(card.src, '', el('div', { class: 'card-fallback', text: card.name })));
+    item.appendChild(cardThumb(card));
     grid.appendChild(item);
   });
   wrap.appendChild(grid);
@@ -502,14 +550,11 @@ function renderCards() {
    RENDER: TAB 3 — RULEBOOK
    ============================================================ */
 function renderRulebook() {
-  const wrap = el('div', { style: 'height:100%' });
-  const frame = el('iframe', { class: 'pdf-frame', src: RULEBOOK_PDF });
-  // if PDF can't load, the iframe simply shows the browser's own message;
-  // provide a graceful link fallback as well
-  const note = el('div', { class: 'pdf-loading' });
-  note.appendChild(el('a', { href: RULEBOOK_PDF, target: '_blank', text: 'Open rulebook PDF', style: 'color:#0a7c3a' }));
-  wrap.appendChild(frame);
-  wrap.appendChild(note);
+  const wrap = el('div', { class: 'rulebook-wrap' });
+  // The button is the first thing visible; the embedded preview sits below it
+  // and lets you scroll through each page.
+  wrap.appendChild(el('a', { class: 'pdf-open-btn', href: RULEBOOK_PDF, target: '_blank', text: 'Open Rulebook PDF' }));
+  wrap.appendChild(el('iframe', { class: 'pdf-frame', src: RULEBOOK_PDF }));
   return wrap;
 }
 
@@ -607,10 +652,22 @@ function renderFullscreen() {
   content.innerHTML = '';
   if (state.fullscreenCard === null) { overlay.hidden = true; return; }
   const filtered = getFilteredImages();
+  const total = filtered.length;
   const card = filtered[state.fullscreenCard];
   if (!card) { overlay.hidden = true; return; }
   overlay.hidden = false;
+  // Fullscreen uses the full-quality original PNG, not the compressed thumbnail.
   content.appendChild(imgOrFallback(card.src, '', el('div', { class: 'card-fallback', text: card.name })));
+  if (total > 1) {
+    content.appendChild(el('button', {
+      class: 'fs-nav fs-prev', text: '‹',
+      onclick: e => { e.stopPropagation(); state.fullscreenCard = (state.fullscreenCard - 1 + total) % total; render(); },
+    }));
+    content.appendChild(el('button', {
+      class: 'fs-nav fs-next', text: '›',
+      onclick: e => { e.stopPropagation(); state.fullscreenCard = (state.fullscreenCard + 1) % total; render(); },
+    }));
+  }
 }
 
 /* ============================================================
@@ -661,6 +718,25 @@ $('#points-modal').addEventListener('click', e => { if (e.target.id === 'points-
 $('#dialog-modal').addEventListener('click', e => { if (e.target.id === 'dialog-modal') closeDialog(); });
 $('#fs-close').addEventListener('click', () => { state.fullscreenCard = null; render(); });
 $('#fs-modal').addEventListener('click', e => { if (e.target.id === 'fs-modal') { state.fullscreenCard = null; render(); } });
+
+// Fullscreen card navigation — keyboard arrows (desktop) + touch swipe (mobile).
+document.addEventListener('keydown', e => {
+  if (state.fullscreenCard === null) return;
+  const total = getFilteredImages().length;
+  if (e.key === 'ArrowRight') { state.fullscreenCard = (state.fullscreenCard + 1) % total; render(); }
+  else if (e.key === 'ArrowLeft') { state.fullscreenCard = (state.fullscreenCard - 1 + total) % total; render(); }
+  else if (e.key === 'Escape') { state.fullscreenCard = null; render(); }
+});
+let fsTouchX = null;
+$('#fs-modal').addEventListener('touchstart', e => { fsTouchX = e.changedTouches[0].clientX; }, { passive: true });
+$('#fs-modal').addEventListener('touchend', e => {
+  if (fsTouchX === null || state.fullscreenCard === null) return;
+  const dx = e.changedTouches[0].clientX - fsTouchX; fsTouchX = null;
+  if (Math.abs(dx) < 40) return;
+  const total = getFilteredImages().length;
+  state.fullscreenCard = dx < 0 ? (state.fullscreenCard + 1) % total : (state.fullscreenCard - 1 + total) % total;
+  render();
+});
 
 loadState();
 render();
