@@ -334,38 +334,41 @@ const ICONS = [
 const ICON_KEYS = ICONS.map(i => i.key);
 
 // tags reference icon keys
+const CARD_ASSET_VERSION = 'v5-20260925';
 const ABILITY_IMAGES = [
-  { src: './assets/Players/Scorpion.png', name: 'Scorpion', tags: ['S'] },
-  { src: './assets/Players/Poison.png',   name: 'Poison',   tags: ['P'] },
-  { src: './assets/Players/Tree.png',     name: 'Tree',     tags: ['T'] },
-  { src: './assets/Players/Wood.png',     name: 'Wood',     tags: ['W'] },
-  { src: './assets/Players/Glass.png',    name: 'Glass',    tags: ['G'] },
-  { src: './assets/Players/Bull.png',     name: 'Bull',     tags: ['B'] },
-  { src: './assets/Players/Horned.png',   name: 'Horned',   tags: ['H'] },
-  { src: './assets/Players/Rain.png',     name: 'Rain',     tags: ['R'] },
-  { src: './assets/Abilities/Ability_Action_Surge.png',    name: 'Action Surge',    tags: ['S','T','W','B','H'] },
-  { src: './assets/Abilities/Ability_Compost_Bin.png',     name: 'Compost Bin',     tags: ['S','T','W','B','H'] },
-  { src: './assets/Abilities/Ability_Deal_Broker.png',     name: 'Deal Broker',     tags: ['S','P','G','B','H'] },
-  { src: './assets/Abilities/Ability_Deflect.png',         name: 'Deflect',         tags: ['S','P','G','B','H'] },
-  { src: './assets/Abilities/Ability_Diversion.png',       name: 'Diversion',       tags: ['S','P','R'] },
-  { src: './assets/Abilities/Ability_Double_Up.png',       name: 'Double Up',       tags: ['S','T','W','R'] },
-  { src: './assets/Abilities/Ability_Elite_Forager.png',   name: 'Elite Forager',   tags: ['S','P','T','W','B'] },
-  { src: './assets/Abilities/Ability_Frog_Charm.png',      name: 'Frog Charm',      tags: ['S','T','W','G','B'] },
-  { src: './assets/Abilities/Ability_Joint_Reward.png',    name: 'Joint Reward',    tags: ['S','P','T','W','R'] },
-  { src: './assets/Abilities/Ability_Keen_Sight.png',      name: 'Keen Sight',      tags: ['S','P','G','B','H'] },
-  { src: './assets/Abilities/Ability_Love_Retrieval.png',  name: 'Love Retrieval',  tags: ['G','B','R'] },
-  { src: './assets/Abilities/Ability_Quick_Draw.png',      name: 'Quick Draw',      tags: ['S','P','G','H','R'] },
-  { src: './assets/Abilities/Ability_Revealer.png',        name: 'Revealer',        tags: ['S','P','W','G','R'] },
-  { src: './assets/Abilities/Ability_Scorpions_Claw.png',  name: "Scorpion's Claw", tags: ['S','P','R'] },
-  { src: './assets/Abilities/Ability_Scramble.png',        name: 'Scramble',        tags: ['S','T','W','H'] },
-  { src: './assets/Abilities/Ability_Spirit_Link.png',     name: 'Spirit Link',     tags: ['S','T','G','H','R'] },
-  { src: './assets/Abilities/Ability_Summoner.png',        name: 'Summoner',        tags: ['S','W','B','R'] },
-  { src: './assets/Abilities/Ability_Truth_Retrieval.png', name: 'Truth Retrieval', tags: ['G','H','R'] },
-  { src: './assets/Abilities/Ability_Poison.png',          name: 'Poison',          tags: ['S','P'] },
-  { src: './assets/Abilities/Ability_Antidote.png',        name: 'Antidote',        tags: ['S','P','T','W','G','B','H','R'] },
-  { src: './assets/Abilities/Ability_Love_Potion.png',     name: 'Love Potion',     tags: ['S','P','T','W','G','B','H','R'] },
-  { src: './assets/Abilities/Ability_Truth_Serum.png',     name: 'Truth Serum',     tags: ['S','P','T','W','G','B','H','R'] },
-];
+  {"src": "./assets/Players/Scorpion.png", "name": "Scorpion", "tags": ["S"]},
+  {"src": "./assets/Players/Poison.png", "name": "Poison", "tags": ["P"]},
+  {"src": "./assets/Players/Tree.png", "name": "Tree", "tags": ["T"]},
+  {"src": "./assets/Players/Wood.png", "name": "Wood", "tags": ["W"]},
+  {"src": "./assets/Players/Glass.png", "name": "Glass", "tags": ["G"]},
+  {"src": "./assets/Players/Bull.png", "name": "Bull", "tags": ["B"]},
+  {"src": "./assets/Players/Horned.png", "name": "Horned", "tags": ["H"]},
+  {"src": "./assets/Players/Rain.png", "name": "Rain", "tags": ["R"]},
+  {"src": "./assets/Abilities/Ability_Action_Surge.png", "name": "Action Surge", "tags": ["S", "P", "T", "B"]},
+  {"src": "./assets/Abilities/Ability_Compost_Bin.png", "name": "Compost Bin", "tags": ["S", "T", "W", "G", "B", "H"]},
+  {"src": "./assets/Abilities/Ability_Cultivator.png", "name": "Cultivator", "tags": ["S", "P", "G", "B", "H", "R"]},
+  {"src": "./assets/Abilities/Ability_Deal_Broker.png", "name": "Deal Broker", "tags": ["S", "P", "T", "G", "H"]},
+  {"src": "./assets/Abilities/Ability_Deflect.png", "name": "Deflect", "tags": ["S", "W", "G", "H"]},
+  {"src": "./assets/Abilities/Ability_Diversion.png", "name": "Diversion", "tags": ["S", "P", "G", "B", "R"]},
+  {"src": "./assets/Abilities/Ability_Double_Up.png", "name": "Double Up", "tags": ["S", "T", "W", "B", "H", "R"]},
+  {"src": "./assets/Abilities/Ability_Elite_Forager.png", "name": "Elite Forager", "tags": ["S", "T", "W", "G", "B", "R"]},
+  {"src": "./assets/Abilities/Ability_Frog_Charm.png", "name": "Frog Charm", "tags": ["S", "T", "W", "G", "B"]},
+  {"src": "./assets/Abilities/Ability_Joint_Reward.png", "name": "Joint Reward", "tags": ["S", "P", "T", "W", "H", "R"]},
+  {"src": "./assets/Abilities/Ability_Keen_Sight.png", "name": "Keen Sight", "tags": ["S", "P", "G", "B", "H"]},
+  {"src": "./assets/Abilities/Ability_Love_Retrieval.png", "name": "Love Retrieval", "tags": ["G", "B", "R"]},
+  {"src": "./assets/Abilities/Ability_Quick_Draw.png", "name": "Quick Draw", "tags": ["S", "P", "H", "R"]},
+  {"src": "./assets/Abilities/Ability_Revealer.png", "name": "Revealer", "tags": ["S", "P", "T", "W", "R"]},
+  {"src": "./assets/Abilities/Ability_Scorpions_Claw.png", "name": "Scorpion's Claw", "tags": ["S", "P", "R"]},
+  {"src": "./assets/Abilities/Ability_Scramble.png", "name": "Scramble", "tags": ["S", "P", "T", "W", "H", "R"]},
+  {"src": "./assets/Abilities/Ability_Spirit_Link.png", "name": "Spirit Link", "tags": ["S", "G", "B", "H", "R"]},
+  {"src": "./assets/Abilities/Ability_Sticky_Fingers.png", "name": "Sticky Fingers", "tags": ["S", "T", "W", "G", "B", "H"]},
+  {"src": "./assets/Abilities/Ability_Summoner.png", "name": "Summoner", "tags": ["S", "W", "G", "B", "R"]},
+  {"src": "./assets/Abilities/Ability_Truth_Retrieval.png", "name": "Truth Retrieval", "tags": ["G", "H", "R"]},
+  {"src": "./assets/Abilities/Ability_Poison.png", "name": "Poison", "tags": ["S", "P"]},
+  {"src": "./assets/Abilities/Ability_Antidote.png", "name": "Antidote", "tags": ["S", "P", "T", "W", "G", "B", "H", "R"]},
+  {"src": "./assets/Abilities/Ability_Love_Potion.png", "name": "Love Potion", "tags": ["S", "P", "T", "W", "G", "B", "H", "R"]},
+  {"src": "./assets/Abilities/Ability_Truth_Serum.png", "name": "Truth Serum", "tags": ["S", "P", "T", "W", "G", "B", "H", "R"]},
+].map(card => ({ ...card, src: card.src + '?v=' + CARD_ASSET_VERSION }));
 
 const TAB_ICONS = [
   { src: './assets/Buttons/Home_Tab.png',     label: 'Home' },
@@ -373,7 +376,7 @@ const TAB_ICONS = [
   { src: './assets/Buttons/Rulebook_Tab.png', label: 'Rules' },
 ];
 
-const RULEBOOK_PDF = './assets/App_Rulebook.pdf';
+const RULEBOOK_PDF = './assets/App_Rulebook.pdf?v=5.0';
 
 /* ============================================================
    STATE
@@ -462,8 +465,8 @@ const imgOrFallback = (src, imgClass, fallbackNode) => {
 };
 // Compressed JPG thumbnail path (same basename) for a card's original PNG src.
 function thumbSrc(src) {
-  const file = src.split('/').pop().replace(/\.png$/i, '.jpg');
-  return './assets/Compressed%20Assets/' + file;
+  const file = src.split('?')[0].split('/').pop().replace(/\.png$/i, '.jpg');
+  return './assets/Compressed%20Assets/' + file + '?v=' + CARD_ASSET_VERSION;
 }
 // Card grid thumbnail: load fast compressed JPG, fall back to original PNG, then text.
 function cardThumb(card) {
