@@ -504,6 +504,7 @@ function renderTable() {
     const row = el('div', { class: 'trow' });
     const nameInput = el('input', {
       class: 'name-input',
+      autocapitalize: 'sentences',
       placeholder: `Player ${r + 1}`,
       value: name,
       oninput: e => { state.playerNames[r] = e.target.value; saveState(); },
