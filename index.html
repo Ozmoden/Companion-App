@@ -502,16 +502,32 @@ function renderTable() {
   // player rows
   state.playerNames.forEach((name, r) => {
     const row = el('div', { class: 'trow' });
+    const saveName = e => {
+      if (e.isComposing) return;
+      const input = e.target;
+      // Mobile keyboards may keep lowercase after Return focuses the next row.
+      const value = input.value.replace(/^(\s*)(\p{L})/u,
+        (_, space, letter) => space + letter.toLocaleUpperCase());
+      if (value !== input.value) {
+        const start = input.selectionStart, end = input.selectionEnd;
+        const delta = value.length - input.value.length;
+        input.value = value;
+        input.setSelectionRange(start + delta, end + delta);
+      }
+      state.playerNames[r] = input.value;
+      saveState();
+    };
     const nameInput = el('input', {
       class: 'name-input',
       autocapitalize: 'sentences',
       placeholder: `Player ${r + 1}`,
       value: name,
-      oninput: e => { state.playerNames[r] = e.target.value; saveState(); },
+      oninput: saveName,
+      oncompositionend: saveName,
     });
     // Enter key advances focus to the next player-name field.
     nameInput.addEventListener('keydown', e => {
-      if (e.key !== 'Enter') return;
+      if (e.key !== 'Enter' || e.isComposing) return;
       e.preventDefault();
       const inputs = Array.from(document.querySelectorAll('.name-input'));
       const idx = inputs.indexOf(e.target);
