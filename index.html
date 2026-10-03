@@ -46,10 +46,11 @@
 
   .tab-transition-layer {
     position: absolute; inset: 0; z-index: 55; overflow: hidden;
-    pointer-events: none; will-change: transform, clip-path;
+    pointer-events: none; will-change: clip-path;
     filter: drop-shadow(0 0 9px rgba(0, 35, 22, 0.9));
   }
-  .tab-transition-layer > .content { width: 100%; height: 100%; flex: none; }
+  .tab-transition-page { position: absolute; inset: 0; will-change: transform; }
+  .tab-transition-page > .content { width: 100%; height: 100%; flex: none; }
 
   .content {
     flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
@@ -835,9 +836,11 @@ function animateTabChange(nextTab) {
   transition.className = 'tab-transition-layer';
   transition.setAttribute('aria-hidden', 'true');
   app.insertBefore(transition, content);
+  const outgoing = document.createElement('div');
+  outgoing.className = 'tab-transition-page';
   const oldPage = content;
   oldPage.removeAttribute('id');
-  transition.appendChild(oldPage);
+  outgoing.appendChild(oldPage);
   const nextPage = document.createElement('div');
   nextPage.id = 'content';
   nextPage.className = 'content';
@@ -845,11 +848,13 @@ function animateTabChange(nextTab) {
   const oldReset = $('#reset-btn').cloneNode(true);
   oldReset.removeAttribute('id');
   oldReset.setAttribute('aria-hidden', 'true');
-  transition.appendChild(oldReset);
+  outgoing.appendChild(oldReset);
+  transition.appendChild(outgoing);
 
   state.activeTab = nextTab;
   render();
   const incoming = $('#content');
+  const incomingParts = Array.from(incoming.children);
   incoming.scrollTop = 0;
 
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -871,12 +876,12 @@ function animateTabChange(nextTab) {
     const count = 64;
     for (let i = 0; i <= count; i++) {
       const y = i / count;
-      const broad = Math.sin(y * Math.PI * 2.1 + 0.35) * width * 0.025;
-      const fine = Math.sin(y * Math.PI * 6.2 - 0.7) * width * 0.012;
+      const broad = Math.sin(y * Math.PI * 2.1 + 0.35) * width * 0.035;
+      const fine = Math.sin(y * Math.PI * 6.2 - 0.7) * width * 0.018;
       const drops = (
-        Math.exp(-Math.pow((y - 0.2) / 0.055, 2)) * 0.07 +
-        Math.exp(-Math.pow((y - 0.53) / 0.085, 2)) * 0.12 +
-        Math.exp(-Math.pow((y - 0.82) / 0.06, 2)) * 0.075
+        Math.exp(-Math.pow((y - 0.2) / 0.08, 2)) * 0.12 +
+        Math.exp(-Math.pow((y - 0.53) / 0.13, 2)) * 0.2 +
+        Math.exp(-Math.pow((y - 0.82) / 0.09, 2)) * 0.13
       ) * width;
       const undulation = (broad + fine + drops) * wobble;
       const x = Math.max(0, Math.min(width, edge - direction * undulation));
@@ -889,12 +894,21 @@ function animateTabChange(nextTab) {
       edgePoints.slice().reverse().map(([x, y]) => x + '% ' + y + '%').join(', ');
     transition.style.clipPath = 'polygon(' + (direction < 0 ? leftPolygon : rightPolygon) + ')';
     incoming.style.clipPath = 'polygon(' + (direction < 0 ? rightPolygon : leftPolygon) + ')';
-    transition.style.transform = 'translateX(' + (direction * eased * 5) + 'vw)';
+    outgoing.style.transform = 'translateX(' + (direction * eased * 14) + 'vw) scale(' + (1 - eased * 0.035) + ')';
+    const incomingOffset = -direction * (1 - eased) * 14;
+    incomingParts.forEach(part => {
+      part.style.willChange = 'transform';
+      part.style.transform = 'translateX(' + incomingOffset + 'vw) scale(' + (0.95 + eased * 0.05) + ')';
+    });
 
     if (progress < 1) requestAnimationFrame(paint);
     else {
       transition.remove();
       incoming.style.clipPath = '';
+      incomingParts.forEach(part => {
+        part.style.transform = '';
+        part.style.willChange = '';
+      });
     }
   };
   requestAnimationFrame(paint);
