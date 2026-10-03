@@ -952,7 +952,12 @@ function renderTabBar() {
   bar.innerHTML = '';
   TAB_ICONS.forEach((t, i) => {
     const active = state.activeTab === i + 1;
-    const btn = el('button', { class: 'tab-button' + (active ? ' active' : ''), onclick: () => animateTabChange(i + 1) });
+    const btn = el('button', {
+      class: 'tab-button' + (active ? ' active' : ''),
+      'aria-label': t.label,
+      title: t.label,
+      onclick: () => animateTabChange(i + 1),
+    });
     btn.dataset.tabIndex = String(i);
     btn.appendChild(imgOrFallback(t.src, '', el('div', { class: 'tab-fallback', text: t.label })));
     bar.appendChild(btn);
