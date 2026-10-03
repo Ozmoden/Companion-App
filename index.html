@@ -161,7 +161,7 @@
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; user-select: none; background: transparent;
   }
-  .cell.x-red { background: #d62828; }
+  @media (prefers-reduced-motion: no-preference) { .cell:not(.icon-cell) { transform-origin: center; transition: transform 90ms ease-out; touch-action: manipulation; } .cell:not(.icon-cell):active { transform: scale(0.9); transition-duration: 55ms; } } @media (prefers-reduced-motion: reduce) { .cell:not(.icon-cell):active { transform: scale(0.96); } } .cell.x-red { background: #d62828; }
   .cell.checked { background: green; }
   .cell-text { font-weight: bold; font-size: var(--cell-font); line-height: 1; color: #000; }
 
@@ -624,13 +624,13 @@ function renderTable() {
       const v = state.tableData[r][c];
       // states: 0 blank | 1 X (transparent) | 2 X (red bg) | 3 ✓ (transparent) | 4 ✓ (green bg)
       const cls = 'cell' + (v === 2 ? ' x-red' : '') + (v === 4 ? ' checked' : '');
-      const cell = el('div', { class: cls });
+      const cell = el('div', { class: cls }); cell.dataset.row = String(r); cell.dataset.col = String(c);
       const t = el('span', { class: 'cell-text' });
       if (v === 1 || v === 2) t.textContent = 'X';
       else if (v === 3 || v === 4) t.textContent = '✓';
       cell.appendChild(t);
       cell.addEventListener('click', () => {
-        state.tableData[r][c] = (state.tableData[r][c] + 1) % 5;
+        state.tableData[r][c] = (state.tableData[r][c] + 1) % 5; requestAnimationFrame(() => jiggleButton(document.querySelector('.cell[data-row="' + r + '"][data-col="' + c + '"]')));
         render();
       });
       row.appendChild(cell);
