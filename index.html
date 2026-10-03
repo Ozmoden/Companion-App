@@ -4,6 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Game Companion</title>
+<meta name="theme-color" content="#087967" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/assets/Buttons/App_Icon_192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Scorpion" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <style>
   /* ---- Responsive scale tokens ---- */
   :root {
@@ -81,6 +87,12 @@
     color: #e0fff1; font-size: clamp(32px, 8vw, 72px); line-height: 1.08;
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
   }
+  .install-app-btn {
+    margin-top: 24px; padding: 12px 24px; border: 2px solid rgba(224,255,241,.9);
+    border-radius: 14px; background: #087967; color: #e0fff1; font: inherit; font-size: 17px; font-weight: 700; line-height: 1.2;
+    box-shadow: 0 4px 12px rgba(0,0,0,.28); cursor: pointer;
+  }
+  .install-app-btn:active { transform: scale(.96); }
   .content.tab-2 { display: flex; overflow: hidden; }
   .content.tab-2 > .tab1-wrap { margin: auto; }
   .tab1-wrap { display: flex; flex-direction: column; align-items: center; gap: clamp(8px, 2vh, 24px); padding: 8px 0; }
@@ -606,6 +618,7 @@ function renderTable() {
 function renderLanding() {
   const page = el('div', { class: 'landing-page' });
   page.appendChild(el('h1', { class: 'landing-title', text: 'Scorpion in the Frog Pond' }));
+  page.appendChild(el('button', { class: 'install-app-btn', type: 'button', text: 'Install app', onclick: handleInstallApp }));
   return page;
 }
 
@@ -743,6 +756,42 @@ function showNotice(title, message) {
   if (message) box.appendChild(el('div', { class: 'modal-message', text: message }));
   box.appendChild(el('button', { class: 'modal-confirm', text: 'OK', onclick: closeDialog }));
   $('#dialog-modal').hidden = false;
+}
+
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+});
+
+async function handleInstallApp() {
+  if (deferredInstallPrompt) {
+    const promptEvent = deferredInstallPrompt;
+    deferredInstallPrompt = null;
+    await promptEvent.prompt();
+    await promptEvent.userChoice;
+    return;
+  }
+
+  const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (standalone) {
+    showNotice('App installed', 'Scorpion in the Frog Pond is already available from your Home Screen.');
+  } else if (ios) {
+    const safari = /Safari/i.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(navigator.userAgent);
+    showNotice('Install app', safari
+      ? 'Tap Share in Safari, then choose Add to Home Screen and tap Add.'
+      : 'Open this page in Safari, tap Share, then choose Add to Home Screen and tap Add.');
+  } else {
+    showNotice('Install app', 'Open your browser menu and choose Install app or Add to Home Screen.');
+  }
+}
+
+window.addEventListener('appinstalled', () => { deferredInstallPrompt = null; });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js').catch(() => {}));
 }
 
 function showConfirm(title, message, onConfirm) {
