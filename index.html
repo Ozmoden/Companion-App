@@ -828,6 +828,7 @@ function animateTabChange(nextTab) {
   const app = document.querySelector('.app');
   app.querySelectorAll('.tab-transition-layer').forEach(layer => layer.remove());
   const content = $('#content');
+  content.style.clipPath = '';
   const oldTab = state.activeTab;
   const direction = nextTab > oldTab ? -1 : 1;
   const transition = document.createElement('div');
@@ -882,15 +883,18 @@ function animateTabChange(nextTab) {
     }
 
     const edgePath = edgePoints.map(([x, y]) => x + '% ' + y + '%').join(', ');
-    const polygon = direction < 0
-      ? '0% 0%, ' + edgePath + ', 0% 100%'
-      : edgePoints[0][0] + '% 0%, 100% 0%, 100% 100%, ' +
-        edgePoints.slice().reverse().map(([x, y]) => x + '% ' + y + '%').join(', ');
-    transition.style.clipPath = 'polygon(' + polygon + ')';
+    const leftPolygon = '0% 0%, ' + edgePath + ', 0% 100%';
+    const rightPolygon = edgePoints[0][0] + '% 0%, 100% 0%, 100% 100%, ' +
+      edgePoints.slice().reverse().map(([x, y]) => x + '% ' + y + '%').join(', ');
+    transition.style.clipPath = 'polygon(' + (direction < 0 ? leftPolygon : rightPolygon) + ')';
+    content.style.clipPath = 'polygon(' + (direction < 0 ? rightPolygon : leftPolygon) + ')';
     transition.style.transform = 'translateX(' + (direction * eased * 5) + 'vw)';
 
     if (progress < 1) requestAnimationFrame(paint);
-    else transition.remove();
+    else {
+      transition.remove();
+      content.style.clipPath = '';
+    }
   };
   requestAnimationFrame(paint);
 }
