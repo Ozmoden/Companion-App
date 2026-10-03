@@ -87,11 +87,36 @@
     background: url("/assets/Background.PNG") center / cover no-repeat;
   }
   .landing-page { position: relative; z-index: 1; width: 100%; padding: 16px; }
-  .landing-title { margin: 0 auto; }
+  .landing-title {
+    position: relative; width: fit-content; margin: 0 auto;
+  }
   .landing-title-image {
     display: block; width: auto; height: auto; max-width: min(44vw, 250px);
     max-height: min(37dvh, 310px); margin: 0 auto; object-fit: contain;
     filter: drop-shadow(0 4px 12px rgba(0, 0, 0, .25));
+    transform-origin: center;
+    animation: title-breathe 3s ease-in-out infinite;
+  }
+  .landing-title::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(112deg, transparent 36%, rgba(255,255,225,.12) 43%, rgba(255,255,245,.78) 50%, rgba(255,255,225,.12) 57%, transparent 64%);
+    background-size: 250% 100%; background-position: 180% 0;
+    -webkit-mask: url("/assets/Title_Screen_Web.png") center / 100% 100% no-repeat;
+    mask: url("/assets/Title_Screen_Web.png") center / 100% 100% no-repeat;
+    opacity: 0; animation: title-shimmer 10s linear infinite;
+  }
+  @keyframes title-breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  @keyframes title-shimmer {
+    0%, 8% { opacity: 0; background-position: 180% 0; }
+    10% { opacity: 1; }
+    20% { opacity: .85; background-position: -80% 0; }
+    22%, 100% { opacity: 0; background-position: -80% 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .landing-title-image, .landing-title::after { animation: none; }
   }
   .install-app-btn {
     margin-top: 24px; padding: 12px 24px; border: 2px solid rgba(224,255,241,.9);
