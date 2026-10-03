@@ -849,7 +849,8 @@ function animateTabChange(nextTab) {
 
   state.activeTab = nextTab;
   render();
-  $('#content').scrollTop = 0;
+  const incoming = $('#content');
+  incoming.scrollTop = 0;
 
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
     transition.remove();
@@ -887,13 +888,13 @@ function animateTabChange(nextTab) {
     const rightPolygon = edgePoints[0][0] + '% 0%, 100% 0%, 100% 100%, ' +
       edgePoints.slice().reverse().map(([x, y]) => x + '% ' + y + '%').join(', ');
     transition.style.clipPath = 'polygon(' + (direction < 0 ? leftPolygon : rightPolygon) + ')';
-    content.style.clipPath = 'polygon(' + (direction < 0 ? rightPolygon : leftPolygon) + ')';
+    incoming.style.clipPath = 'polygon(' + (direction < 0 ? rightPolygon : leftPolygon) + ')';
     transition.style.transform = 'translateX(' + (direction * eased * 5) + 'vw)';
 
     if (progress < 1) requestAnimationFrame(paint);
     else {
       transition.remove();
-      content.style.clipPath = '';
+      incoming.style.clipPath = '';
     }
   };
   requestAnimationFrame(paint);
