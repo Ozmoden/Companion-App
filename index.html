@@ -87,9 +87,11 @@
     background: url("/assets/Background.PNG") center / cover no-repeat;
   }
   .landing-page { position: relative; z-index: 1; width: 100%; padding: 16px; }
-  .landing-title {
-    color: #e0fff1; font-size: clamp(32px, 8vw, 72px); line-height: 1.08;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
+  .landing-title { margin: 0 auto; }
+  .landing-title-image {
+    display: block; width: auto; height: auto; max-width: min(88vw, 500px);
+    max-height: min(74dvh, 620px); margin: 0 auto; object-fit: contain;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, .25));
   }
   .install-app-btn {
     margin-top: 24px; padding: 12px 24px; border: 2px solid rgba(224,255,241,.9);
@@ -627,7 +629,9 @@ function renderTable() {
 
 function renderLanding() {
   const page = el('div', { class: 'landing-page' });
-  page.appendChild(el('h1', { class: 'landing-title', text: 'Scorpion in the Frog Pond' }));
+  page.appendChild(el('h1', { class: 'landing-title' }, el('img', {
+    class: 'landing-title-image', src: '/assets/Title_Screen_Web.png', alt: 'Scorpion in the Frog Pond'
+  })));
   page.appendChild(el('button', { class: 'install-app-btn', type: 'button', text: 'Install app', onclick: handleInstallApp }));
   return page;
 }
