@@ -193,6 +193,29 @@
   }
   .tab-button.active .tab-fallback { opacity: 1; }
 
+  /* Press feedback for navigation, reset, score, and card filters. */
+  @media (prefers-reduced-motion: no-preference) {
+    .tab-button, .reset-btn, .add-btn, .filter-icon {
+      transform-origin: center;
+      transition: transform 90ms ease-out;
+      touch-action: manipulation;
+    }
+    .tab-button:active, .reset-btn:active, .add-btn:active, .filter-icon:active {
+      transform: scale(0.9);
+      transition-duration: 55ms;
+    }
+    .release-jiggle { animation: button-release-jiggle 220ms ease-out; }
+  }
+  @keyframes button-release-jiggle {
+    0% { transform: scale(0.9); }
+    45% { transform: scale(1.07); }
+    72% { transform: scale(0.97); }
+    100% { transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tab-button:active, .reset-btn:active, .add-btn:active, .filter-icon:active { transform: scale(0.96); }
+  }
+
   /* ---------- Modal ---------- */
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.8);
@@ -582,6 +605,7 @@ function renderCards() {
   ICONS.forEach(ic => {
     const selected = state.selectedIcons.includes(ic.key);
     const btn = el('button', { class: 'filter-icon' + (selected ? ' selected' : '') });
+    btn.dataset.iconFilter = ic.key;
     btn.appendChild(imgOrFallback(ic.icon, '', el('div', { class: 'ic-fallback', text: ic.key })));
     btn.addEventListener('click', () => {
       state.selectedIcons = selected
@@ -791,12 +815,33 @@ function renderFullscreen() {
 /* ============================================================
    TAB BAR + ROOT RENDER
    ============================================================ */
+function jiggleButton(button) {
+  if (!button) return;
+  button.classList.remove('release-jiggle');
+  void button.offsetWidth;
+  button.classList.add('release-jiggle');
+  button.addEventListener('animationend', () => button.classList.remove('release-jiggle'), { once: true });
+}
+
+document.addEventListener('click', event => {
+  const pressed = event.target.closest('.reset-btn, .add-btn, .tab-button, .filter-icon');
+  if (!pressed) return;
+  let target = pressed;
+  if (pressed.matches('.tab-button')) {
+    target = document.querySelector('.tab-button[data-tab-index="' + pressed.dataset.tabIndex + '"]');
+  } else if (pressed.matches('.filter-icon')) {
+    target = document.querySelector('.filter-icon[data-icon-filter="' + pressed.dataset.iconFilter + '"]');
+  }
+  requestAnimationFrame(() => jiggleButton(target));
+});
+
 function renderTabBar() {
   const bar = $('#tab-bar');
   bar.innerHTML = '';
   TAB_ICONS.forEach((t, i) => {
     const active = state.activeTab === i + 1;
     const btn = el('button', { class: 'tab-button' + (active ? ' active' : ''), onclick: () => { state.activeTab = i + 1; render(); } });
+    btn.dataset.tabIndex = String(i);
     btn.appendChild(imgOrFallback(t.src, '', el('div', { class: 'tab-fallback', text: t.label })));
     bar.appendChild(btn);
   });
@@ -900,4 +945,3 @@ window.addEventListener('load', () => {
 </script>
 </body>
 </html>
-
