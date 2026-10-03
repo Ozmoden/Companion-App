@@ -75,8 +75,14 @@
   /* ---------- Tab 1: Table ---------- */
   /* Center the table + point box vertically and horizontally in the content area.
      overflow:hidden locks the home display so it never moves/scrolls on a swipe. */
-  .content.tab-1 { display: flex; overflow: hidden; }
-  .content.tab-1 > .tab1-wrap { margin: auto; }
+  .content.tab-1 { display: flex; align-items: center; justify-content: center; overflow: hidden; text-align: center; }
+  .landing-page { width: 100%; padding: 16px; }
+  .landing-title {
+    color: #e0fff1; font-size: clamp(32px, 8vw, 72px); line-height: 1.08;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
+  }
+  .content.tab-2 { display: flex; overflow: hidden; }
+  .content.tab-2 > .tab1-wrap { margin: auto; }
   .tab1-wrap { display: flex; flex-direction: column; align-items: center; gap: clamp(8px, 2vh, 24px); padding: 8px 0; }
   .table { display: inline-block; }
   .trow { display: flex; align-items: center; }
@@ -403,6 +409,7 @@ const ABILITY_IMAGES = [
 
 const TAB_ICONS = [
   { src: './assets/Buttons/Home_Tab.png',     label: 'Home' },
+  { src: './assets/Buttons/Table_Tab.png',    label: 'Table' },
   { src: './assets/Buttons/Cards_Tab.png',    label: 'Cards' },
   { src: './assets/Buttons/Rulebook_Tab.png', label: 'Rules' },
 ];
@@ -413,7 +420,7 @@ const RULEBOOK_PDF = './assets/App_Rulebook.pdf?v=5.0';
    STATE
    ============================================================ */
 const state = {
-  activeTab: 1,                                  // 1=table, 2=cards, 3=rulebook
+  activeTab: 1,                                  // 1=home, 2=table, 3=cards, 4=rulebook
   playerNames: Array(8).fill(''),
   // cell values cycle 0 -> 1 (faint X) -> 2 (solid X) -> 3 (check) -> 0
   tableData: Array.from({ length: 8 }, () => Array(8).fill(0)),
@@ -594,6 +601,12 @@ function renderTable() {
   wrap.appendChild(box);
 
   return wrap;
+}
+
+function renderLanding() {
+  const page = el('div', { class: 'landing-page' });
+  page.appendChild(el('h1', { class: 'landing-title', text: 'Scorpion in the Frog Pond' }));
+  return page;
 }
 
 /* ============================================================
@@ -950,12 +963,13 @@ function render() {
   const content = $('#content');
   content.className = 'content tab-' + state.activeTab;  // enables per-tab layout (e.g. centering tab 1)
   content.innerHTML = '';
-  if (state.activeTab === 1) content.appendChild(renderTable());
-  else if (state.activeTab === 2) content.appendChild(renderCards());
-  else if (state.activeTab === 3) content.appendChild(renderRulebook());
+  if (state.activeTab === 1) content.appendChild(renderLanding());
+  else if (state.activeTab === 2) content.appendChild(renderTable());
+  else if (state.activeTab === 3) content.appendChild(renderCards());
+  else if (state.activeTab === 4) content.appendChild(renderRulebook());
 
-  // reset button only on tab 1
-  $('#reset-btn').style.display = state.activeTab === 1 ? 'flex' : 'none';
+  // Reset button belongs to the table tab.
+  $('#reset-btn').style.display = state.activeTab === 2 ? 'flex' : 'none';
 
   renderTabBar();
   renderPointsModal();
