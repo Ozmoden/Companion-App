@@ -95,14 +95,14 @@
     max-height: min(37dvh, 310px); margin: 0 auto; object-fit: contain;
     filter: drop-shadow(0 4px 12px rgba(0, 0, 0, .25));
     transform-origin: center;
-    animation: title-breathe 12s ease-in-out infinite;
+    animation: title-breathe 7.5s ease-in-out infinite;
   }
   .landing-title::after {
     content: ""; position: absolute; inset: 0; pointer-events: none;
-    background: linear-gradient(112deg, transparent 42%, rgba(255,255,225,.10) 46%, rgba(255,255,245,.58) 50%, rgba(255,255,225,.10) 54%, transparent 58%);
-    background-size: 250% 100%; background-position: 200% 0;
+    background: linear-gradient(112deg, transparent 40%, rgba(255,255,225,.08) 46%, rgba(255,255,245,.52) 50%, rgba(255,255,225,.08) 54%, transparent 60%);
     -webkit-mask: url("/assets/Title_Screen_Web.png") center / 100% 100% no-repeat;
     mask: url("/assets/Title_Screen_Web.png") center / 100% 100% no-repeat;
+    transform: translateX(-125%);
     animation: title-shimmer 10s linear infinite;
   }
   @keyframes title-breathe {
@@ -110,8 +110,8 @@
     50% { transform: scale(1.05); }
   }
   @keyframes title-shimmer {
-    0%, 8% { background-position: 200% 0; }
-    20%, 100% { background-position: -100% 0; }
+    0%, 8% { transform: translateX(-125%); }
+    20%, 100% { transform: translateX(125%); }
   }
   @media (prefers-reduced-motion: reduce) {
     .landing-title-image, .landing-title::after { animation: none; }
