@@ -44,6 +44,13 @@
     display: flex; flex-direction: column;
   }
 
+  .tab-transition-layer {
+    position: absolute; inset: 0; z-index: 55; overflow: hidden;
+    pointer-events: none; will-change: transform, clip-path;
+    filter: drop-shadow(0 0 9px rgba(0, 35, 22, 0.9));
+  }
+  .tab-transition-layer > .content { width: 100%; height: 100%; flex: none; }
+
   .content {
     flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
     /* Keep content clear of the notch/corners, and leave room for the fixed tab bar. */
@@ -815,6 +822,79 @@ function renderFullscreen() {
 /* ============================================================
    TAB BAR + ROOT RENDER
    ============================================================ */
+function animateTabChange(nextTab) {
+  if (nextTab === state.activeTab) return;
+
+  const app = document.querySelector('.app');
+  app.querySelectorAll('.tab-transition-layer').forEach(layer => layer.remove());
+  const content = $('#content');
+  const oldTab = state.activeTab;
+  const direction = nextTab > oldTab ? -1 : 1;
+  const transition = document.createElement('div');
+  transition.className = 'tab-transition-layer';
+  transition.setAttribute('aria-hidden', 'true');
+  app.insertBefore(transition, content);
+  const oldPage = content;
+  oldPage.removeAttribute('id');
+  transition.appendChild(oldPage);
+  const nextPage = document.createElement('div');
+  nextPage.id = 'content';
+  nextPage.className = 'content';
+  app.insertBefore(nextPage, transition);
+  const oldReset = $('#reset-btn').cloneNode(true);
+  oldReset.removeAttribute('id');
+  oldReset.setAttribute('aria-hidden', 'true');
+  transition.appendChild(oldReset);
+
+  state.activeTab = nextTab;
+  render();
+  $('#content').scrollTop = 0;
+
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    transition.remove();
+    return;
+  }
+
+  const duration = 500;
+  const start = performance.now();
+  const paint = now => {
+    if (!transition.isConnected) return;
+    const progress = Math.min(1, (now - start) / duration);
+    const eased = progress * progress;
+    const width = transition.clientWidth || window.innerWidth;
+    const height = transition.clientHeight || window.innerHeight;
+    const edge = direction < 0 ? width * (1 - eased) : width * eased;
+    const wobble = Math.sin(Math.PI * eased);
+    const edgePoints = [];
+    const count = 64;
+    for (let i = 0; i <= count; i++) {
+      const y = i / count;
+      const broad = Math.sin(y * Math.PI * 2.1 + 0.35) * width * 0.025;
+      const fine = Math.sin(y * Math.PI * 6.2 - 0.7) * width * 0.012;
+      const drops = (
+        Math.exp(-Math.pow((y - 0.2) / 0.055, 2)) * 0.07 +
+        Math.exp(-Math.pow((y - 0.53) / 0.085, 2)) * 0.12 +
+        Math.exp(-Math.pow((y - 0.82) / 0.06, 2)) * 0.075
+      ) * width;
+      const undulation = (broad + fine + drops) * wobble;
+      const x = Math.max(0, Math.min(width, edge - direction * undulation));
+      edgePoints.push([x / width * 100, y * 100]);
+    }
+
+    const edgePath = edgePoints.map(([x, y]) => x + '% ' + y + '%').join(', ');
+    const polygon = direction < 0
+      ? '0% 0%, ' + edgePath + ', 0% 100%'
+      : edgePoints[0][0] + '% 0%, 100% 0%, 100% 100%, ' +
+        edgePoints.slice().reverse().map(([x, y]) => x + '% ' + y + '%').join(', ');
+    transition.style.clipPath = 'polygon(' + polygon + ')';
+    transition.style.transform = 'translateX(' + (direction * eased * 5) + 'vw)';
+
+    if (progress < 1) requestAnimationFrame(paint);
+    else transition.remove();
+  };
+  requestAnimationFrame(paint);
+}
+
 function jiggleButton(button) {
   if (!button) return;
   button.classList.remove('release-jiggle');
@@ -840,7 +920,7 @@ function renderTabBar() {
   bar.innerHTML = '';
   TAB_ICONS.forEach((t, i) => {
     const active = state.activeTab === i + 1;
-    const btn = el('button', { class: 'tab-button' + (active ? ' active' : ''), onclick: () => { state.activeTab = i + 1; render(); } });
+    const btn = el('button', { class: 'tab-button' + (active ? ' active' : ''), onclick: () => animateTabChange(i + 1) });
     btn.dataset.tabIndex = String(i);
     btn.appendChild(imgOrFallback(t.src, '', el('div', { class: 'tab-fallback', text: t.label })));
     bar.appendChild(btn);
