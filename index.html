@@ -124,6 +124,23 @@
   .install-app-btn:active { transform: scale(.96); }
   .contact-btn { display: block; width: 150px; height: 49px; margin: 12px auto 0; padding: 12px 24px; border: 2px solid rgba(224,255,241,.8); border-radius: 14px; background: rgba(4,76,68,.78); color: #e0fff1; font: inherit; font-size: 17px; font-weight: 700; line-height: 1.2; box-shadow: 0 4px 12px rgba(0,0,0,.28); cursor: pointer; }
   .contact-btn:active { transform: scale(.96); }
+
+  @media (orientation: landscape) {
+    .content.tab-1 .landing-page {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(150px, .65fr);
+      grid-template-rows: 1fr 1fr;
+      align-items: center;
+      justify-items: center;
+      gap: 12px clamp(24px, 8vw, 100px);
+      max-width: 900px;
+      margin: auto;
+    }
+    .content.tab-1 .landing-title { grid-column: 1; grid-row: 1 / span 2; margin: auto; }
+    .content.tab-1 .landing-title-image { max-width: min(32vw, 250px); max-height: min(70dvh, 310px); }
+    .content.tab-1 .install-app-btn { grid-column: 2; grid-row: 1; margin: 0; }
+    .content.tab-1 .contact-btn { grid-column: 2; grid-row: 2; margin: 0; }
+  }
   @media (orientation: portrait) {
     .content.tab-1::before {
       inset: auto; top: 50%; left: 50%; width: 100vh; height: 100vw;
