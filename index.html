@@ -122,6 +122,8 @@
     box-shadow: 0 4px 12px rgba(0,0,0,.28); cursor: pointer;
   }
   .install-app-btn:active { transform: scale(.96); }
+  .contact-btn { display: block; margin: 12px auto 0; padding: 10px 22px; border: 1px solid rgba(224,255,241,.8); border-radius: 12px; background: rgba(4,76,68,.78); color: #e0fff1; font: inherit; font-size: 15px; font-weight: 700; box-shadow: 0 3px 10px rgba(0,0,0,.22); cursor: pointer; }
+  .contact-btn:active { transform: scale(.96); }
   @media (orientation: portrait) {
     .content.tab-1::before {
       inset: auto; top: 50%; left: 50%; width: 100vh; height: 100vw;
@@ -301,6 +303,15 @@
     padding: 10px 32px; border-radius: 12px; cursor: pointer;
   }
   .modal-message { font-size: 16px; color: #333; text-align: center; margin-bottom: 20px; line-height: 1.4; }
+  .contact-modal-box { max-height: calc(100dvh - 40px); overflow-y: auto; }
+  .contact-form { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+  .contact-form label { width: 100%; color: #143d32; font-size: 14px; font-weight: 700; text-align: left; }
+  .contact-form input, .contact-form textarea { display: block; box-sizing: border-box; width: 100%; margin-top: 5px; padding: 11px 12px; border: 1px solid #83aa96; border-radius: 9px; background: #fff; color: #17251f; font: inherit; font-size: 16px; text-align: left; }
+  .contact-form textarea { min-height: 120px; resize: vertical; }
+  .contact-form input:focus, .contact-form textarea:focus { outline: 2px solid #087967; outline-offset: 1px; }
+  .contact-form .contact-privacy { margin: 0; color: #52665d; font-size: 12px; line-height: 1.35; text-align: center; }
+  .contact-status { min-height: 1.3em; margin: 0; color: #a3271e; font-size: 14px; text-align: center; }
+  .contact-actions { display: flex; justify-content: center; gap: 12px; }
   .dialog-buttons { display: flex; gap: 12px; }
   /* number pad */
   .num-pad { display: flex; flex-direction: column; align-items: center; gap: 6px; }
@@ -656,6 +667,7 @@ function renderLanding() {
     class: 'landing-title-image', src: '/assets/Title_Screen_Web.png', alt: 'Scorpion in the Frog Pond'
   })));
   page.appendChild(el('button', { class: 'install-app-btn', type: 'button', text: 'Install app', onclick: handleInstallApp }));
+  page.appendChild(el('button', { class: 'contact-btn', type: 'button', text: 'Contact', onclick: openContact }));
   return page;
 }
 
@@ -783,7 +795,65 @@ function closeModal()     { state.modal = null; render(); }
 function closeDialog() {
   const overlay = $('#dialog-modal');
   overlay.hidden = true;
+  $('#dialog-box').className = 'modal-box';
   $('#dialog-box').innerHTML = '';
+}
+
+function openContact() {
+  const box = $('#dialog-box');
+  box.className = 'modal-box contact-modal-box';
+  box.innerHTML = '';
+  box.appendChild(el('div', { class: 'modal-title', text: 'Contact' }));
+
+  const form = el('form', { class: 'contact-form' });
+  const name = el('input', { name: 'name', type: 'text', autocomplete: 'name', maxlength: '120', required: 'required' });
+  const email = el('input', { name: 'email', type: 'email', autocomplete: 'email', maxlength: '254', required: 'required' });
+  const message = el('textarea', { name: 'message', maxlength: '5000', required: 'required' });
+  name.id = 'contact-name'; email.id = 'contact-email'; message.id = 'contact-message';
+  form.appendChild(el('label', { for: name.id, text: 'Name' }, name));
+  form.appendChild(el('label', { for: email.id, text: 'Email' }, email));
+  form.appendChild(el('label', { for: message.id, text: 'Message' }, message));
+  const honeypot = el('input', { name: '_honey', type: 'text', tabindex: '-1', autocomplete: 'off' });
+  honeypot.setAttribute('aria-hidden', 'true');
+  honeypot.style.cssText = 'position:absolute;left:-10000px;width:1px;height:1px;';
+  form.appendChild(honeypot);
+  form.appendChild(el('p', { class: 'contact-privacy', text: 'Messages are delivered to Andrew by FormSubmit.' }));
+  const status = el('p', { class: 'contact-status', role: 'status', 'aria-live': 'polite' });
+  form.appendChild(status);
+  const actions = el('div', { class: 'contact-actions' });
+  const send = el('button', { class: 'modal-confirm', type: 'submit', text: 'Send message' });
+  actions.appendChild(send);
+  actions.appendChild(el('button', { class: 'modal-cancel', type: 'button', text: 'Cancel', onclick: closeDialog }));
+  form.appendChild(actions);
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+    if (honeypot.value) return;
+    send.disabled = true;
+    send.textContent = 'Sending…';
+    status.style.color = '#52665d';
+    status.textContent = '';
+    try {
+      const response = await fetch('https://formsubmit.co/ajax/Andrew@FricksIndustries.com', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ name: name.value.trim(), email: email.value.trim(), message: message.value.trim(), _honey: honeypot.value, _subject: 'Website contact message', _template: 'table', _url: window.location.origin })
+      });
+      const result = await response.json();
+      if (!response.ok || result.success === 'false' || result.success === false) throw new Error('Message could not be sent.');
+      form.innerHTML = '';
+      form.appendChild(el('div', { class: 'modal-message', text: 'Your message has been sent. Thank you for getting in touch.' }));
+      form.appendChild(el('button', { class: 'modal-confirm', type: 'button', text: 'Close', onclick: closeDialog }));
+    } catch (error) {
+      status.style.color = '#a3271e';
+      status.textContent = 'We couldn’t send your message. Please try again in a moment.';
+      send.disabled = false;
+      send.textContent = 'Send message';
+    }
+  });
+  box.appendChild(form);
+  $('#dialog-modal').hidden = false;
+  name.focus();
 }
 
 function showNotice(title, message) {
