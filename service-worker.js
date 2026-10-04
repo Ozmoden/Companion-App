@@ -1,10 +1,10 @@
-const CACHE_NAME = 'frog-pond-companion-v2';
+const CACHE_NAME = 'frog-pond-companion-v3';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/assets/Buttons/App_Icon_192.png',
-  '/assets/Buttons/App_Icon_512.png'
+  '/assets/Buttons/App_Icon_192_v2.png',
+  '/assets/Buttons/App_Icon_512_v2.png'
 ];
 
 self.addEventListener('install', event => {
