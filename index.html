@@ -706,7 +706,7 @@ function renderTable() {
 function renderLanding() {
   const page = el('div', { class: 'landing-page' });
   page.appendChild(el('h1', { class: 'landing-title' }, el('img', {
-    class: 'landing-title-image', src: '/assets/Title_Screen_Web.png', alt: 'Scorpion in the Frog Pond'
+    class: 'landing-title-image', src: '/assets/Title_Screen_Web.png', alt: 'Scorpion in the Frog Pond', role: 'button', tabindex: '0', 'aria-label': 'Open Table', style: 'cursor:pointer;touch-action:manipulation', onclick: () => animateTabChange(2), onkeydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); animateTabChange(2); } }
   })));
   page.appendChild(el('button', { class: 'install-app-btn', type: 'button', text: 'Install app', onclick: handleInstallApp }));
   page.appendChild(el('button', { class: 'contact-btn', type: 'button', text: 'Contact', onclick: openContact }));
