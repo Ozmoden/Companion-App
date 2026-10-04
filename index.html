@@ -367,6 +367,11 @@
   .fs-overlay[hidden] { display: none; }
   .fs-overlay img { max-width: 92vw; max-height: 88vh; border-radius: 12px; object-fit: contain; }
   .fs-overlay .card-fallback { width: 60%; height: 60%; font-size: 18px; }
+  #fs-content { position: absolute; inset: 0; overflow: hidden; touch-action: pan-y; }
+  .fs-card-slide { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .fs-card-track { position: absolute; top: 0; bottom: 0; left: 0; display: flex; will-change: transform; }
+  .fs-card-track .fs-card-slide { position: relative; inset: auto; flex: 0 0 auto; width: var(--fs-slide-width); height: 100%; }
+  .fs-card-track.is-animating { transition: transform 240ms cubic-bezier(.22,.75,.25,1); }
   .fs-close {
     position: absolute; top: 40px; right: 20px; background: rgba(255,255,255,0.2);
     color: #fff; border: none; padding: 10px 16px; border-radius: 20px;
@@ -1082,26 +1087,58 @@ function renderFullscreen() {
   const overlay = $('#fs-modal');
   const content = $('#fs-content');
   content.innerHTML = '';
+  overlay.querySelectorAll('.fs-nav').forEach(button => button.remove());
   if (state.fullscreenCard === null) { overlay.hidden = true; return; }
   const filtered = getFilteredImages();
   const total = filtered.length;
   const card = filtered[state.fullscreenCard];
   if (!card) { overlay.hidden = true; return; }
   overlay.hidden = false;
-  // Fullscreen uses the full-quality original PNG, not the compressed thumbnail.
-  content.appendChild(imgOrFallback(card.src, '', el('div', { class: 'card-fallback', text: card.name })));
+  const slide = el('div', { class: 'fs-card-slide' });
+  slide.appendChild(imgOrFallback(card.src, '', el('div', { class: 'card-fallback', text: card.name })));
+  content.appendChild(slide);
   if (total > 1) {
-    content.appendChild(el('button', {
-      class: 'fs-nav fs-prev', text: '‹',
-      onclick: e => { e.stopPropagation(); state.fullscreenCard = (state.fullscreenCard - 1 + total) % total; render(); },
-    }));
-    content.appendChild(el('button', {
-      class: 'fs-nav fs-next', text: '›',
-      onclick: e => { e.stopPropagation(); state.fullscreenCard = (state.fullscreenCard + 1) % total; render(); },
-    }));
+    overlay.appendChild(el('button', { class: 'fs-nav fs-prev', text: '‹', onclick: e => { e.stopPropagation(); transitionFullscreenCard(-1); } }));
+    overlay.appendChild(el('button', { class: 'fs-nav fs-next', text: '›', onclick: e => { e.stopPropagation(); transitionFullscreenCard(1); } }));
   }
 }
 
+let fsAnimating = false;
+let fsPointer = null;
+
+function transitionFullscreenCard(direction) {
+  if (fsAnimating || state.fullscreenCard === null) return;
+  const cards = getFilteredImages();
+  if (cards.length < 2) return;
+  fsAnimating = true;
+  const width = $('#fs-content').clientWidth || window.innerWidth;
+  const current = state.fullscreenCard;
+  const target = (current + direction + cards.length) % cards.length;
+  const before = (current - 1 + cards.length) % cards.length;
+  const after = (current + 1) % cards.length;
+  const track = buildFullscreenTrack([cards[before], cards[current], cards[after]], width);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    track.classList.add('is-animating');
+    track.style.transform = 'translate3d(' + (direction > 0 ? -2 * width : 0) + 'px, 0, 0)';
+  }));
+  track.addEventListener('transitionend', () => { state.fullscreenCard = target; fsAnimating = false; render(); }, { once: true });
+}
+
+function buildFullscreenTrack(cards, width) {
+  const content = $('#fs-content');
+  content.innerHTML = '';
+  const track = el('div', { class: 'fs-card-track' });
+  track.style.setProperty('--fs-slide-width', width + 'px');
+  track.style.width = (width * cards.length) + 'px';
+  track.style.transform = 'translate3d(-' + width + 'px, 0, 0)';
+  cards.forEach(card => {
+    const slide = el('div', { class: 'fs-card-slide' });
+    slide.appendChild(imgOrFallback(card.src, '', el('div', { class: 'card-fallback', text: card.name })));
+    track.appendChild(slide);
+  });
+  content.appendChild(track);
+  return track;
+}
 /* ============================================================
    TAB BAR + ROOT RENDER
    ============================================================ */
@@ -1270,25 +1307,61 @@ $('#dialog-modal').addEventListener('click', e => { if (e.target.id === 'dialog-
 $('#fs-close').addEventListener('click', () => { state.fullscreenCard = null; render(); });
 $('#fs-modal').addEventListener('click', e => { if (e.target.id === 'fs-modal') { state.fullscreenCard = null; render(); } });
 
-// Fullscreen card navigation — keyboard arrows (desktop) + touch swipe (mobile).
+// Fullscreen card navigation: arrows and keyboard animate between cards; dragging tracks the pointer.
 document.addEventListener('keydown', e => {
   if (state.fullscreenCard === null) return;
-  const total = getFilteredImages().length;
-  if (e.key === 'ArrowRight') { state.fullscreenCard = (state.fullscreenCard + 1) % total; render(); }
-  else if (e.key === 'ArrowLeft') { state.fullscreenCard = (state.fullscreenCard - 1 + total) % total; render(); }
+  if (e.key === 'ArrowRight') transitionFullscreenCard(1);
+  else if (e.key === 'ArrowLeft') transitionFullscreenCard(-1);
   else if (e.key === 'Escape') { state.fullscreenCard = null; render(); }
 });
-let fsTouchX = null;
-$('#fs-modal').addEventListener('touchstart', e => { fsTouchX = e.changedTouches[0].clientX; }, { passive: true });
-$('#fs-modal').addEventListener('touchend', e => {
-  if (fsTouchX === null || state.fullscreenCard === null) return;
-  const dx = e.changedTouches[0].clientX - fsTouchX; fsTouchX = null;
-  if (Math.abs(dx) < 40) return;
-  const total = getFilteredImages().length;
-  state.fullscreenCard = dx < 0 ? (state.fullscreenCard + 1) % total : (state.fullscreenCard - 1 + total) % total;
-  render();
+
+const fsContent = $('#fs-content');
+fsContent.addEventListener('pointerdown', e => {
+  if (state.fullscreenCard === null || fsAnimating || e.button !== 0) return;
+  const cards = getFilteredImages();
+  if (cards.length < 2) return;
+  const width = fsContent.clientWidth || window.innerWidth;
+  const current = state.fullscreenCard;
+  const before = (current - 1 + cards.length) % cards.length;
+  const after = (current + 1) % cards.length;
+  const track = buildFullscreenTrack([cards[before], cards[current], cards[after]], width);
+  fsPointer = { id: e.pointerId, startX: e.clientX, startY: e.clientY, width, track, dragging: false };
+  fsContent.setPointerCapture(e.pointerId);
+});
+fsContent.addEventListener('pointermove', e => {
+  if (!fsPointer || e.pointerId !== fsPointer.id) return;
+  const dx = e.clientX - fsPointer.startX;
+  const dy = e.clientY - fsPointer.startY;
+  if (!fsPointer.dragging) {
+    if (Math.abs(dx) < 5 || Math.abs(dx) <= Math.abs(dy)) return;
+    fsPointer.dragging = true;
+  }
+  e.preventDefault();
+  fsPointer.track.style.transform = 'translate3d(' + (-fsPointer.width + dx) + 'px, 0, 0)';
 });
 
+function finishFullscreenPointer(e) {
+  if (!fsPointer || e.pointerId !== fsPointer.id) return;
+  const gesture = fsPointer;
+  fsPointer = null;
+  if (!gesture.dragging) { renderFullscreen(); return; }
+  const dx = e.clientX - gesture.startX;
+  const threshold = Math.max(44, gesture.width * 0.18);
+  const direction = dx <= -threshold ? 1 : dx >= threshold ? -1 : 0;
+  fsAnimating = true;
+  gesture.track.classList.add('is-animating');
+  gesture.track.style.transform = 'translate3d(' + (direction > 0 ? -2 * gesture.width : direction < 0 ? 0 : -gesture.width) + 'px, 0, 0)';
+  gesture.track.addEventListener('transitionend', () => {
+    if (direction) {
+      const total = getFilteredImages().length;
+      state.fullscreenCard = (state.fullscreenCard + direction + total) % total;
+    }
+    fsAnimating = false;
+    renderFullscreen();
+  }, { once: true });
+}
+fsContent.addEventListener('pointerup', finishFullscreenPointer);
+fsContent.addEventListener('pointercancel', finishFullscreenPointer);
 // Tab ribbon: a vertical swipe ANYWHERE on screen toggles it (down = hide, up =
 // reveal). Only the ribbon moves — the display never scrolls (locked above).
 // Horizontal swipes navigate adjacent tabs unless a modal or control owns the gesture.
