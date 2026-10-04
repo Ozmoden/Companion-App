@@ -303,6 +303,26 @@
     padding: 10px 32px; border-radius: 12px; cursor: pointer;
   }
   .modal-message { font-size: 16px; color: #333; text-align: center; margin-bottom: 20px; line-height: 1.4; }
+    .ios-install-overlay { align-items: flex-end; padding: 0; background: rgba(0,0,0,.42); backdrop-filter: blur(3px); }
+  .ios-install-sheet { width: min(100%, 430px); max-height: min(78dvh, 680px); overflow-y: auto; margin: 0 auto; padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: stretch; border-radius: 24px 24px 0 0; background: #f2f2f7; color: #17171a; box-shadow: 0 -8px 32px rgba(0,0,0,.2); animation: ios-sheet-in .28s cubic-bezier(.2,.8,.2,1); }
+  .ios-sheet-grabber { width: 36px; height: 5px; margin: 0 auto 14px; border-radius: 99px; background: #c7c7cc; }
+  .ios-sheet-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .ios-sheet-heading h2 { color: #17171a; font-size: 18px; font-weight: 700; }
+  .ios-sheet-close { border: 0; padding: 6px 0 6px 12px; background: transparent; color: #087aff; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .ios-site-preview { display: flex; align-items: center; gap: 12px; min-height: 72px; padding: 12px; border-radius: 14px; background: #fff; }
+  .ios-site-icon { width: 46px; height: 46px; flex: 0 0 46px; border-radius: 11px; object-fit: cover; }
+  .ios-site-name { color: #19191d; font-size: 16px; font-weight: 650; }
+  .ios-site-url { margin-top: 3px; color: #73737a; font-size: 13px; }
+  .ios-install-steps { margin-top: 14px; overflow: hidden; border-radius: 14px; background: #fff; }
+  .ios-install-step { display: flex; align-items: center; gap: 14px; min-height: 72px; padding: 12px 14px; }
+  .ios-install-step + .ios-install-step { border-top: 1px solid #e5e5ea; }
+  .ios-step-icon { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border-radius: 11px; background: #f2f2f7; color: #087aff; }
+  .ios-step-icon svg { width: 26px; height: 26px; }
+  .ios-step-copy { color: #25252a; font-size: 14px; line-height: 1.35; }
+  .ios-step-copy strong { display: block; margin-bottom: 2px; font-size: 15px; }
+  .ios-install-hint { margin: 12px 3px 0; color: #686870; font-size: 13px; line-height: 1.4; text-align: center; }
+  @keyframes ios-sheet-in { from { transform: translateY(24px); opacity: .75; } to { transform: translateY(0); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .ios-install-sheet { animation: none; } }
   .contact-modal-box { max-height: calc(100dvh - 40px); overflow-y: auto; }
   .contact-form { width: 100%; display: flex; flex-direction: column; gap: 12px; }
   .contact-form label { width: 100%; color: #143d32; font-size: 14px; font-weight: 700; text-align: left; }
@@ -796,6 +816,11 @@ function closeDialog() {
   const overlay = $('#dialog-modal');
   overlay.hidden = true;
   $('#dialog-box').className = 'modal-box';
+  overlay.className = 'modal-overlay';
+  const box = $('#dialog-box');
+  box.removeAttribute('role');
+  box.removeAttribute('aria-modal');
+  box.removeAttribute('aria-labelledby');
   $('#dialog-box').innerHTML = '';
 }
 
@@ -870,6 +895,74 @@ function showNotice(title, message) {
   $('#dialog-modal').hidden = false;
 }
 
+function installStepIcon(kind) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '1.8');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  svg.setAttribute('aria-hidden', 'true');
+  const paths = kind === 'share'
+    ? ['M12 15V3m0 0 4 4m-4-4L8 7', 'M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8']
+    : ['M5 9v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7', 'M5 7V5a2 2 0 0 1 2-2h7', 'M18 2v7m-3.5-3.5h7'];
+  paths.forEach(d => {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    svg.appendChild(path);
+  });
+  return svg;
+}
+
+function showIOSInstallPopup(isSafari) {
+  const overlay = $('#dialog-modal');
+  const box = $('#dialog-box');
+  overlay.className = 'modal-overlay ios-install-overlay';
+  box.className = 'modal-box ios-install-sheet';
+  box.innerHTML = '';
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  box.setAttribute('aria-labelledby', 'ios-install-heading');
+  box.appendChild(el('div', { class: 'ios-sheet-grabber', 'aria-hidden': 'true' }));
+  const heading = el('div', { class: 'ios-sheet-heading' });
+  heading.appendChild(el('h2', { id: 'ios-install-heading', text: 'Add Frog Pond' }));
+  heading.appendChild(el('button', { class: 'ios-sheet-close', type: 'button', text: 'Done', onclick: closeDialog }));
+  box.appendChild(heading);
+
+  const preview = el('div', { class: 'ios-site-preview' });
+  preview.appendChild(el('img', { class: 'ios-site-icon', src: '/assets/Buttons/App_Icon_192_v2.png', alt: '' }));
+  const site = el('div');
+  site.appendChild(el('div', { class: 'ios-site-name', text: 'Frog Pond' }));
+  site.appendChild(el('div', { class: 'ios-site-url', text: 'frogpondcompanion.com' }));
+  preview.appendChild(site);
+  box.appendChild(preview);
+
+  const steps = el('div', { class: 'ios-install-steps' });
+  const shareStep = el('div', { class: 'ios-install-step' });
+  const shareIcon = el('div', { class: 'ios-step-icon' });
+  shareIcon.appendChild(installStepIcon('share'));
+  shareStep.appendChild(shareIcon);
+  const shareCopy = el('div', { class: 'ios-step-copy' });
+  shareCopy.appendChild(el('strong', { text: 'Share' }));
+  shareCopy.appendChild(el('span', { text: isSafari ? 'Tap the Share button in Safari.' : 'Open this page in Safari, then tap Share.' }));
+  shareStep.appendChild(shareCopy);
+  steps.appendChild(shareStep);
+
+  const homeStep = el('div', { class: 'ios-install-step' });
+  const homeIcon = el('div', { class: 'ios-step-icon' });
+  homeIcon.appendChild(installStepIcon('home'));
+  homeStep.appendChild(homeIcon);
+  const homeCopy = el('div', { class: 'ios-step-copy' });
+  homeCopy.appendChild(el('strong', { text: 'Add to Home Screen' }));
+  homeCopy.appendChild(el('span', { text: 'Choose this option, then tap Add.' }));
+  homeStep.appendChild(homeCopy);
+  steps.appendChild(homeStep);
+  box.appendChild(steps);
+  box.appendChild(el('p', { class: 'ios-install-hint', text: 'Frog Pond will open from your Home Screen like an app.' }));
+  overlay.hidden = false;
+}
+
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', event => {
   event.preventDefault();
@@ -892,9 +985,7 @@ async function handleInstallApp() {
     showNotice('App installed', 'Scorpion in the Frog Pond is already available from your Home Screen.');
   } else if (ios) {
     const safari = /Safari/i.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(navigator.userAgent);
-    showNotice('Install app', safari
-      ? 'Tap Share in Safari, then choose Add to Home Screen and tap Add.'
-      : 'Open this page in Safari, tap Share, then choose Add to Home Screen and tap Add.');
+        showIOSInstallPopup(safari);
   } else {
     showNotice('Install app', 'Open your browser menu and choose Install app or Add to Home Screen.');
   }
