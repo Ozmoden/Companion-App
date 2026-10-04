@@ -10,13 +10,13 @@
   "theme_color": "#087967",
   "icons": [
     {
-      "src": "/assets/Buttons/App_Icon_192.png",
+      "src": "/assets/Buttons/App_Icon_192_v2.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/Buttons/App_Icon_512.png",
+      "src": "/assets/Buttons/App_Icon_512_v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
