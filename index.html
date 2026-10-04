@@ -1183,7 +1183,7 @@ $('#fs-modal').addEventListener('touchend', e => {
 
 // Tab ribbon: a vertical swipe ANYWHERE on screen toggles it (down = hide, up =
 // reveal). Only the ribbon moves — the display never scrolls (locked above).
-// Horizontal swipes are ignored here so fullscreen card navigation still works.
+// Horizontal swipes navigate adjacent tabs unless a modal or control owns the gesture.
 const tabBarEl = $('#tab-bar');
 let swipeStartX = null, swipeStartY = null;
 document.addEventListener('touchstart', e => {
@@ -1194,7 +1194,7 @@ document.addEventListener('touchend', e => {
   const dx = e.changedTouches[0].clientX - swipeStartX;
   const dy = e.changedTouches[0].clientY - swipeStartY;
   swipeStartX = swipeStartY = null;
-  if (Math.abs(dy) < 40 || Math.abs(dy) <= Math.abs(dx)) return;  // need a clear vertical swipe
+if (Math.abs(dx) >= 48 && Math.abs(dx) > Math.abs(dy)) { const overlaysOpen = !$('#fs-modal').hidden || !$('#dialog-modal').hidden || !$('#points-modal').hidden; const onControl = e.target instanceof Element && e.target.closest('button, a, input, textarea, select, [contenteditable="true"]'); const nextTab = state.activeTab + (dx < 0 ? 1 : -1); if (!overlaysOpen && !onControl && nextTab >= 1 && nextTab <= TAB_ICONS.length) animateTabChange(nextTab); return; } if (Math.abs(dy) < 40 || Math.abs(dy) <= Math.abs(dx)) return;
   tabBarEl.classList.toggle('hidden', dy > 0);                    // down hides, up reveals
 }, { passive: true });
 
