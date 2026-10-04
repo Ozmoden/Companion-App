@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Scorpion in the Frog Pond",
-  "short_name": "Scorpion in the Frog Pond",
-  "description": "A companion app for Scorpion in the Frog Pond.",
+  "name": "Frog Pond",
+  "short_name": "Frog Pond",
+  "description": "A companion app for Frog Pond.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
