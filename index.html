@@ -1313,7 +1313,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') transitionFullscreenCard(1);
   else if (e.key === 'ArrowLeft') transitionFullscreenCard(-1);
   else if (e.key === 'Escape') { state.fullscreenCard = null; render(); }
-});let fsClickWasOnCard = false;
+});const fsContent = $('#fs-content'); let fsClickWasOnCard = false;
 
   
 fsContent.addEventListener('pointerdown', e => {
