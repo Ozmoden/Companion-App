@@ -367,7 +367,7 @@
   .fs-overlay[hidden] { display: none; }
   .fs-overlay img { max-width: 92vw; max-height: 88vh; border-radius: 12px; object-fit: contain; }
   .fs-overlay .card-fallback { width: 60%; height: 60%; font-size: 18px; }
-  #fs-content { position: absolute; inset: 0; overflow: hidden; touch-action: pan-y; }
+  #fs-content { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
   .fs-card-slide { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
   .fs-card-track { position: absolute; top: 0; bottom: 0; left: 0; display: flex; will-change: transform; }
   .fs-card-track .fs-card-slide { position: relative; inset: auto; flex: 0 0 auto; width: var(--fs-slide-width); height: 100%; }
@@ -1314,7 +1314,8 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'ArrowLeft') transitionFullscreenCard(-1);
   else if (e.key === 'Escape') { state.fullscreenCard = null; render(); }
 });let fsClickWasOnCard = false;
-const fsContent = $('#fs-content');
+
+  
 fsContent.addEventListener('pointerdown', e => {
   if (state.fullscreenCard === null || fsAnimating || e.button !== 0) return; const target = e.target instanceof Element ? e.target : null; fsClickWasOnCard = !!(target && target.closest('.fs-card-slide img, .fs-card-slide .card-fallback'));
   const cards = getFilteredImages();
@@ -1328,22 +1329,22 @@ fsContent.addEventListener('pointerdown', e => {
   fsContent.setPointerCapture(e.pointerId);
 });
 fsContent.addEventListener('pointermove', e => {
-  if (!fsPointer || e.pointerId !== fsPointer.id || (!fsPointer.track && !fsPointer.dismissOnRelease)) return;
-  if (!fsPointer.track) return; const dx = e.clientX - fsPointer.startX;
+  if (!fsPointer || e.pointerId !== fsPointer.id) return;
+  const dx = e.clientX - fsPointer.startX;
   const dy = e.clientY - fsPointer.startY;
   if (!fsPointer.dragging) {
-    if (Math.abs(dx) < 5 || Math.abs(dx) <= Math.abs(dy)) return;
+    if (Math.abs(dy) >= 8 && Math.abs(dy) > Math.abs(dx)) { fsPointer.vertical = true; } else if (Math.abs(dx) < 5 || Math.abs(dx) <= Math.abs(dy)) return;
     fsPointer.dragging = true;
   }
   e.preventDefault();
-  fsPointer.track.style.transform = 'translate3d(' + (-fsPointer.width + dx) + 'px, 0, 0)';
+  if (fsPointer.track && !fsPointer.vertical) fsPointer.track.style.transform = 'translate3d(' + (-fsPointer.width + dx) + 'px, 0, 0)';
 });
 
 function finishFullscreenPointer(e) {
-  if (!fsPointer || e.pointerId !== fsPointer.id || (!fsPointer.track && !fsPointer.dismissOnRelease)) return;
+  if (!fsPointer || e.pointerId !== fsPointer.id) return;
   const gesture = fsPointer;
   fsPointer = null;
-  if (!gesture.dragging) { if (gesture.dismissOnRelease) { state.fullscreenCard = null; render(); } return; }
+  if (gesture.vertical) { const dy = e.clientY - gesture.startY; if (Math.abs(dy) >= 48) { state.fullscreenCard = null; render(); } else renderFullscreen(); return; } if (!gesture.dragging) { if (gesture.dismissOnRelease) { state.fullscreenCard = null; render(); } return; }
   const dx = e.clientX - gesture.startX;
   const threshold = Math.max(44, gesture.width * 0.18);
   const direction = dx <= -threshold ? 1 : dx >= threshold ? -1 : 0;
