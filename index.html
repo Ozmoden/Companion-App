@@ -1109,7 +1109,7 @@ let fsPointer = null;
 function transitionFullscreenCard(direction) {
   if (fsAnimating || state.fullscreenCard === null) return;
   const cards = getFilteredImages();
-  if (cards.length < 2) { fsPointer = { id: e.pointerId, startX: e.clientX, startY: e.clientY, width: fsContent.clientWidth || window.innerWidth, track: null, dragging: false, dismissOnRelease: !fsClickWasOnCard }; fsContent.setPointerCapture(e.pointerId); return; }
+  if (cards.length < 2) return;
   fsAnimating = true;
   const width = $('#fs-content').clientWidth || window.innerWidth;
   const current = state.fullscreenCard;
