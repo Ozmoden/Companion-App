@@ -1343,7 +1343,7 @@ function finishFullscreenPointer(e) {
   if (!fsPointer || e.pointerId !== fsPointer.id) return;
   const gesture = fsPointer;
   fsPointer = null;
-  if (!gesture.dragging) { renderFullscreen(); return; }
+  if (!gesture.dragging) return;
   const dx = e.clientX - gesture.startX;
   const threshold = Math.max(44, gesture.width * 0.18);
   const direction = dx <= -threshold ? 1 : dx >= threshold ? -1 : 0;
