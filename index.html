@@ -1109,7 +1109,7 @@ let fsPointer = null;
 function transitionFullscreenCard(direction) {
   if (fsAnimating || state.fullscreenCard === null) return;
   const cards = getFilteredImages();
-  if (cards.length < 2) return;
+  if (cards.length < 2) { fsPointer = { id: e.pointerId, startX: e.clientX, startY: e.clientY, width: fsContent.clientWidth || window.innerWidth, track: null, dragging: false, dismissOnRelease: !fsClickWasOnCard }; fsContent.setPointerCapture(e.pointerId); return; }
   fsAnimating = true;
   const width = $('#fs-content').clientWidth || window.innerWidth;
   const current = state.fullscreenCard;
@@ -1318,18 +1318,18 @@ const fsContent = $('#fs-content');
 fsContent.addEventListener('pointerdown', e => {
   if (state.fullscreenCard === null || fsAnimating || e.button !== 0) return; const target = e.target instanceof Element ? e.target : null; fsClickWasOnCard = !!(target && target.closest('.fs-card-slide img, .fs-card-slide .card-fallback'));
   const cards = getFilteredImages();
-  if (cards.length < 2) return;
+  if (cards.length < 2) { fsPointer = { id: e.pointerId, startX: e.clientX, startY: e.clientY, width: fsContent.clientWidth || window.innerWidth, track: null, dragging: false, dismissOnRelease: !fsClickWasOnCard }; fsContent.setPointerCapture(e.pointerId); return; }
   const width = fsContent.clientWidth || window.innerWidth;
   const current = state.fullscreenCard;
   const before = (current - 1 + cards.length) % cards.length;
   const after = (current + 1) % cards.length;
   const track = buildFullscreenTrack([cards[before], cards[current], cards[after]], width);
-  fsPointer = { id: e.pointerId, startX: e.clientX, startY: e.clientY, width, track, dragging: false };
+  fsPointer = { id: e.pointerId, startX: e.clientX, startY: e.clientY, width, track, dragging: false, dismissOnRelease: !fsClickWasOnCard };
   fsContent.setPointerCapture(e.pointerId);
 });
 fsContent.addEventListener('pointermove', e => {
-  if (!fsPointer || e.pointerId !== fsPointer.id) return;
-  const dx = e.clientX - fsPointer.startX;
+  if (!fsPointer || e.pointerId !== fsPointer.id || (!fsPointer.track && !fsPointer.dismissOnRelease)) return;
+  if (!fsPointer.track) return; const dx = e.clientX - fsPointer.startX;
   const dy = e.clientY - fsPointer.startY;
   if (!fsPointer.dragging) {
     if (Math.abs(dx) < 5 || Math.abs(dx) <= Math.abs(dy)) return;
@@ -1340,10 +1340,10 @@ fsContent.addEventListener('pointermove', e => {
 });
 
 function finishFullscreenPointer(e) {
-  if (!fsPointer || e.pointerId !== fsPointer.id) return;
+  if (!fsPointer || e.pointerId !== fsPointer.id || (!fsPointer.track && !fsPointer.dismissOnRelease)) return;
   const gesture = fsPointer;
   fsPointer = null;
-  if (!gesture.dragging) return;
+  if (!gesture.dragging) { if (gesture.dismissOnRelease) { state.fullscreenCard = null; render(); } return; }
   const dx = e.clientX - gesture.startX;
   const threshold = Math.max(44, gesture.width * 0.18);
   const direction = dx <= -threshold ? 1 : dx >= threshold ? -1 : 0;
