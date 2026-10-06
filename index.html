@@ -335,7 +335,7 @@
   .ios-install-step { display: flex; align-items: center; gap: 14px; min-height: 72px; padding: 12px 14px; }
   .ios-install-step + .ios-install-step { border-top: 1px solid #e5e5ea; }
   .ios-step-icon { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border-radius: 11px; background: #f2f2f7; color: #087aff; }
-  .ios-step-icon svg { width: 26px; height: 26px; }
+  .ios-step-icon img { width: 26px; height: 26px; }
   .ios-step-copy { color: #25252a; font-size: 14px; line-height: 1.35; }
   .ios-step-copy strong { display: block; margin-bottom: 2px; font-size: 15px; }
   .ios-install-hint { margin: 12px 3px 0; color: #686870; font-size: 13px; line-height: 1.4; text-align: center; }
@@ -964,7 +964,7 @@ function showIOSInstallPopup(isSafari) {
   const steps = el('div', { class: 'ios-install-steps' });
   const shareStep = el('div', { class: 'ios-install-step' });
   const shareIcon = el('div', { class: 'ios-step-icon' });
-  shareIcon.appendChild(installStepIcon('share'));
+  shareIcon.appendChild(el('img', { src: '/assets/Buttons/Share.png', alt: '' }));
   shareStep.appendChild(shareIcon);
   const shareCopy = el('div', { class: 'ios-step-copy' });
   shareCopy.appendChild(el('strong', { text: 'Share' }));
@@ -974,7 +974,7 @@ function showIOSInstallPopup(isSafari) {
 
   const homeStep = el('div', { class: 'ios-install-step' });
   const homeIcon = el('div', { class: 'ios-step-icon' });
-  homeIcon.appendChild(installStepIcon('home'));
+  homeIcon.appendChild(el('img', { src: '/assets/Buttons/Plus.png', alt: '' }));
   homeStep.appendChild(homeIcon);
   const homeCopy = el('div', { class: 'ios-step-copy' });
   homeCopy.appendChild(el('strong', { text: 'Add to Home Screen' }));
@@ -983,7 +983,7 @@ function showIOSInstallPopup(isSafari) {
   steps.appendChild(homeStep);
   box.appendChild(steps);
   box.appendChild(el('p', { class: 'ios-install-hint', text: 'Frog Pond will open from your Home Screen like an app.' }));
-  overlay.hidden = false;
+  box.style.transform = ''; box.style.transition = ''; let dragStartY = null; let dragStartTime = 0; [box.querySelector('.ios-sheet-grabber'), box.querySelector('.ios-sheet-heading')].forEach(handle => { handle.style.touchAction = 'none'; handle.style.cursor = 'grab'; handle.addEventListener('pointerdown', event => { if (event.target.closest('button')) return; dragStartY = event.clientY; dragStartTime = performance.now(); box.style.transition = 'none'; handle.setPointerCapture(event.pointerId); }); handle.addEventListener('pointermove', event => { if (dragStartY === null) return; box.style.transform = 'translateY(' + Math.max(0, event.clientY - dragStartY) + 'px)'; }); const finishDrag = event => { if (dragStartY === null) return; const distance = Math.max(0, event.clientY - dragStartY); const velocity = distance / Math.max(1, performance.now() - dragStartTime); dragStartY = null; box.style.transition = 'transform .22s ease'; if (distance > 100 || (distance > 35 && velocity > .55)) { box.style.transform = 'translateY(100%)'; setTimeout(closeDialog, 220); } else { box.style.transform = ''; } }; handle.addEventListener('pointerup', finishDrag); handle.addEventListener('pointercancel', finishDrag); }); overlay.hidden = false;
 }
 
 let deferredInstallPrompt = null;
@@ -1053,7 +1053,7 @@ function renderPointsModal() {
   const overlay = $('#points-modal');
 
   if (!state.modal) { overlay.hidden = true; return; }
-  overlay.hidden = false;
+  box.style.transform = ''; box.style.transition = ''; let dragStartY = null; let dragStartTime = 0; [box.querySelector('.ios-sheet-grabber'), box.querySelector('.ios-sheet-heading')].forEach(handle => { handle.style.touchAction = 'none'; handle.style.cursor = 'grab'; handle.addEventListener('pointerdown', event => { if (event.target.closest('button')) return; dragStartY = event.clientY; dragStartTime = performance.now(); box.style.transition = 'none'; handle.setPointerCapture(event.pointerId); }); handle.addEventListener('pointermove', event => { if (dragStartY === null) return; box.style.transform = 'translateY(' + Math.max(0, event.clientY - dragStartY) + 'px)'; }); const finishDrag = event => { if (dragStartY === null) return; const distance = Math.max(0, event.clientY - dragStartY); const velocity = distance / Math.max(1, performance.now() - dragStartTime); dragStartY = null; box.style.transition = 'transform .22s ease'; if (distance > 100 || (distance > 35 && velocity > .55)) { box.style.transform = 'translateY(100%)'; setTimeout(closeDialog, 220); } else { box.style.transform = ''; } }; handle.addEventListener('pointerup', finishDrag); handle.addEventListener('pointercancel', finishDrag); }); overlay.hidden = false;
 
   if (state.modal === 'override') {
     box.appendChild(el('div', { class: 'modal-title', text: 'Points Override' }));
@@ -1094,7 +1094,7 @@ function renderFullscreen() {
   const total = filtered.length;
   const card = filtered[state.fullscreenCard];
   if (!card) { overlay.hidden = true; return; }
-  overlay.hidden = false;
+  box.style.transform = ''; box.style.transition = ''; let dragStartY = null; let dragStartTime = 0; [box.querySelector('.ios-sheet-grabber'), box.querySelector('.ios-sheet-heading')].forEach(handle => { handle.style.touchAction = 'none'; handle.style.cursor = 'grab'; handle.addEventListener('pointerdown', event => { if (event.target.closest('button')) return; dragStartY = event.clientY; dragStartTime = performance.now(); box.style.transition = 'none'; handle.setPointerCapture(event.pointerId); }); handle.addEventListener('pointermove', event => { if (dragStartY === null) return; box.style.transform = 'translateY(' + Math.max(0, event.clientY - dragStartY) + 'px)'; }); const finishDrag = event => { if (dragStartY === null) return; const distance = Math.max(0, event.clientY - dragStartY); const velocity = distance / Math.max(1, performance.now() - dragStartTime); dragStartY = null; box.style.transition = 'transform .22s ease'; if (distance > 100 || (distance > 35 && velocity > .55)) { box.style.transform = 'translateY(100%)'; setTimeout(closeDialog, 220); } else { box.style.transform = ''; } }; handle.addEventListener('pointerup', finishDrag); handle.addEventListener('pointercancel', finishDrag); }); overlay.hidden = false;
   const slide = el('div', { class: 'fs-card-slide' });
   slide.appendChild(imgOrFallback(card.src, '', el('div', { class: 'card-fallback', text: card.name })));
   content.appendChild(slide);
