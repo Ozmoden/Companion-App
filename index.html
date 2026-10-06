@@ -335,13 +335,13 @@
   .ios-install-step { display: flex; align-items: center; gap: 14px; min-height: 72px; padding: 12px 14px; }
   .ios-install-step + .ios-install-step { border-top: 1px solid #e5e5ea; }
   .ios-step-icon { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border-radius: 11px; background: #f2f2f7; color: #087aff; }
-  .ios-step-icon img { width: 26px; height: 26px; }
+  .ios-step-icon img { width: 26px; height: 26px; } .ios-install-step:first-child .ios-step-icon img { width: 34px; height: 34px; }
   .ios-step-copy { color: #25252a; font-size: 14px; line-height: 1.35; }
   .ios-step-copy strong { display: block; margin-bottom: 2px; font-size: 15px; }
   .ios-install-hint { margin: 12px 3px 0; color: #686870; font-size: 13px; line-height: 1.4; text-align: center; }
   @keyframes ios-sheet-in { from { transform: translateY(24px); opacity: .75; } to { transform: translateY(0); opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { .ios-install-sheet { animation: none; } }
-  .contact-modal-box { max-height: calc(100dvh - 40px); overflow-y: auto; }
+  @media (orientation: landscape) { .ios-install-sheet { max-height: 94dvh; padding: 8px 18px calc(10px + env(safe-area-inset-bottom)); } .ios-sheet-grabber { margin-bottom: 8px; } .ios-sheet-heading { margin-bottom: 8px; } .ios-site-preview { min-height: 58px; padding: 8px 12px; } .ios-install-steps { margin-top: 8px; } .ios-install-step { min-height: 56px; padding: 8px 12px; } .ios-install-hint { margin-top: 8px; } } .contact-modal-box { max-height: calc(100dvh - 40px); overflow-y: auto; }
   .contact-form { width: 100%; display: flex; flex-direction: column; gap: 12px; }
   .contact-form label { width: 100%; color: #143d32; font-size: 14px; font-weight: 700; text-align: left; }
   .contact-form input, .contact-form select, .contact-form textarea { display: block; box-sizing: border-box; width: 100%; margin-top: 5px; padding: 11px 12px; border: 1px solid #83aa96; border-radius: 9px; background: #fff; color: #17251f; font: inherit; font-size: 16px; text-align: left; }
