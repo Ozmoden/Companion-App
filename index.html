@@ -1616,6 +1616,7 @@ document.addEventListener('click', event => {
   const step = TUTORIAL_STEPS[tutorial.index];
   let allowed = false;
   if (step?.action === 'cell') allowed = !!target.closest('.tutorial-center-cell');
+  if (step?.action === 'open-add') allowed = !!target.closest('.add-btn');
   if (step?.action === 'poison-filter') allowed = !!target.closest('.filter-icon[data-icon-filter="P"]');
   if (step?.action === 'override-zero') allowed = !!target.closest('#points-modal .num-btn');
   if (step?.action === 'confirm-points') {
@@ -1665,7 +1666,7 @@ function render() {
   renderFullscreen();
 
   // Persist durable game data after every state-changing render.
-  saveState();
+  if (!tutorial.active) saveState();
   if (tutorial.active) requestAnimationFrame(positionTutorialOverlay);
 }
 
