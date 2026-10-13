@@ -1472,7 +1472,7 @@ function positionTutorialOverlay() {
     const above = rect.top - cardHeight - 16;
     if (below + cardHeight < viewportHeight - bottomClearance) top = below;
     else if (above > safeTop + 44) top = above;
-    else top = Math.max(safeTop + 48, viewportHeight - cardHeight - 24);
+    else top = Math.max(safeTop + 48, viewportHeight - cardHeight - bottomClearance);
     left = Math.min(viewportWidth - cardWidth - 16, Math.max(16, rect.left + rect.width / 2 - cardWidth / 2));
   } else {
     top = Math.max(safeTop + 54, viewportHeight - cardHeight - bottomClearance);
@@ -1620,7 +1620,10 @@ document.addEventListener('click', event => {
   if (step?.action === 'cell') allowed = !!target.closest('.tutorial-center-cell');
   if (step?.action === 'open-add') allowed = !!target.closest('.add-btn');
   if (step?.action === 'poison-filter') allowed = !!target.closest('.filter-icon[data-icon-filter="P"]');
-  if (step?.action === 'override-zero') allowed = !!target.closest('#points-modal .num-btn');
+  if (step?.action === 'override-zero') {
+    const numberButton = target.closest('#points-modal .num-btn');
+    allowed = !!target.closest('.point-value') || !!(numberButton && numberButton.textContent.trim() === '0');
+  }
   if (step?.action === 'confirm-points') {
     allowed = !!target.closest('#points-modal .modal-confirm') ||
       (tutorial.waitingForNotice && !!target.closest('#dialog-box .modal-confirm'));
