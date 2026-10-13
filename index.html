@@ -437,7 +437,7 @@
   }
   #tutorial-ui { position: fixed; inset: 0; z-index: 200; pointer-events: none; }
   #tutorial-exit {
-    position: fixed; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
+    position: fixed; top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left));
     z-index: 202; pointer-events: auto; border: 1px solid rgba(255,255,255,.82); border-radius: 999px;
     padding: 9px 14px; background: rgba(2,46,42,.92); color: #fff; font: inherit; font-weight: 700;
     box-shadow: 0 3px 12px rgba(0,0,0,.3);
@@ -1463,18 +1463,19 @@ function positionTutorialOverlay() {
   const viewportHeight = window.innerHeight;
   const cardWidth = Math.min(390, viewportWidth - 32);
   const cardHeight = card.getBoundingClientRect().height || 160;
-  const safeTop = Math.max(12, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-top)')) || 0);
+  const safeTop = 12;
+  const bottomClearance = 112;
   let left = Math.max(16, (viewportWidth - cardWidth) / 2);
   let top;
   if (rect) {
     const below = rect.bottom + 16;
     const above = rect.top - cardHeight - 16;
-    if (below + cardHeight < viewportHeight - 18) top = below;
+    if (below + cardHeight < viewportHeight - bottomClearance) top = below;
     else if (above > safeTop + 44) top = above;
     else top = Math.max(safeTop + 48, viewportHeight - cardHeight - 24);
     left = Math.min(viewportWidth - cardWidth - 16, Math.max(16, rect.left + rect.width / 2 - cardWidth / 2));
   } else {
-    top = Math.max(safeTop + 54, viewportHeight - cardHeight - 24);
+    top = Math.max(safeTop + 54, viewportHeight - cardHeight - bottomClearance);
   }
   card.style.left = left + 'px';
   card.style.top = Math.max(8, Math.min(top, viewportHeight - cardHeight - 8)) + 'px';
@@ -1531,6 +1532,7 @@ function startTutorial() {
   state.modal = null;
   state.inputValue = '';
   state.fullscreenCard = null;
+  state.tableData[3][3] = 0;
   render();
   showTutorialStep();
 }
