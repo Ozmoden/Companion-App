@@ -321,7 +321,7 @@
     padding: 10px 32px; border-radius: 12px; cursor: pointer;
   }
   .modal-message { font-size: 16px; color: #333; text-align: center; margin-bottom: 20px; line-height: 1.4; }
-    .ios-install-overlay { align-items: flex-end; padding: 0; background: rgba(0,0,0,.42); backdrop-filter: blur(3px); }
+    .ios-install-overlay { align-items: flex-end; padding: 0; background: rgba(0,0,0,.42); backdrop-filter: blur(3px); touch-action: none; }
   .ios-install-sheet { width: min(100%, 430px); max-height: min(78dvh, 680px); overflow-y: auto; margin: 0 auto; padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: stretch; border-radius: 24px 24px 0 0; background: #f2f2f7; color: #17171a; box-shadow: 0 -8px 32px rgba(0,0,0,.2); animation: ios-sheet-in .28s cubic-bezier(.2,.8,.2,1); }
   .ios-sheet-grabber { width: 36px; height: 5px; margin: 0 auto 14px; border-radius: 99px; background: #c7c7cc; }
   .ios-sheet-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -983,7 +983,52 @@ function showIOSInstallPopup(isSafari) {
   steps.appendChild(homeStep);
   box.appendChild(steps);
   box.appendChild(el('p', { class: 'ios-install-hint', text: 'Frog Pond will open from your Home Screen like an app.' }));
-  box.style.transform = ''; box.style.transition = ''; let dragStartY = null; let dragStartTime = 0; [box.querySelector('.ios-sheet-grabber'), box.querySelector('.ios-sheet-heading')].filter(Boolean).forEach(handle => { handle.style.touchAction = 'none'; handle.style.cursor = 'grab'; handle.addEventListener('pointerdown', event => { if (event.target.closest('button')) return; dragStartY = event.clientY; dragStartTime = performance.now(); box.style.transition = 'none'; handle.setPointerCapture(event.pointerId); }); handle.addEventListener('pointermove', event => { if (dragStartY === null) return; box.style.transform = 'translateY(' + Math.max(0, event.clientY - dragStartY) + 'px)'; }); const finishDrag = event => { if (dragStartY === null) return; const distance = Math.max(0, event.clientY - dragStartY); const velocity = distance / Math.max(1, performance.now() - dragStartTime); dragStartY = null; box.style.transition = 'transform .22s ease'; if (distance > 100 || (distance > 35 && velocity > .55)) { box.style.transform = 'translateY(100%)'; setTimeout(closeDialog, 220); } else { box.style.transform = ''; } }; handle.addEventListener('pointerup', finishDrag); handle.addEventListener('pointercancel', finishDrag); }); overlay.hidden = false;
+  box.style.transform = ''; box.style.transition = '';
+  let dragStartY = null;
+  let dragStartTime = 0;
+  let activePointerId = null;
+  let dragging = false;
+  const finishSheetDrag = event => {
+    if (activePointerId !== event.pointerId || dragStartY === null) return;
+    const distance = Math.max(0, event.clientY - dragStartY);
+    const velocity = distance / Math.max(1, performance.now() - dragStartTime);
+    activePointerId = null;
+    dragStartY = null;
+    box.style.transition = 'transform .22s ease';
+    if (dragging && (distance > 90 || (distance > 35 && velocity > .5))) {
+      box.style.transform = 'translateY(100%)';
+      setTimeout(closeDialog, 220);
+    } else {
+      box.style.transform = '';
+    }
+    dragging = false;
+  };
+  const startSheetDrag = event => {
+    if (event.button !== undefined && event.button !== 0) return;
+    activePointerId = event.pointerId;
+    dragStartY = event.clientY;
+    dragStartTime = performance.now();
+    dragging = false;
+    box.style.transition = 'none';
+    if (event.target.setPointerCapture) {
+      try { event.target.setPointerCapture(event.pointerId); } catch (_) {}
+    }
+  };
+  const moveSheetDrag = event => {
+    if (activePointerId !== event.pointerId || dragStartY === null) return;
+    const offset = event.clientY - dragStartY;
+    if (offset < 0) return;
+    if (offset > 6) {
+      dragging = true;
+      event.preventDefault();
+      box.style.transform = 'translateY(' + offset + 'px)';
+    }
+  };
+  overlay.addEventListener('pointerdown', startSheetDrag);
+  overlay.addEventListener('pointermove', moveSheetDrag);
+  overlay.addEventListener('pointerup', finishSheetDrag);
+  overlay.addEventListener('pointercancel', finishSheetDrag);
+  overlay.hidden = false;
 }
 
 let deferredInstallPrompt = null;
