@@ -257,24 +257,23 @@
   }
   .rulebook-pdf-overlay {
     position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column;
-    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
-    background: #fff; color: #043;
+    padding: 0; background: #fff; color: #043;
   }
   .rulebook-pdf-overlay[hidden] { display: none; }
-  .rulebook-pdf-overlay-header {
-    display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between;
-    min-height: 48px; gap: 12px; padding: 4px 2px 8px;
-  }
-  .rulebook-pdf-overlay-title { font: bold 17px "Book Antiqua", "Palatino Linotype", Palatino, serif; }
   .rulebook-pdf-close {
+    position: absolute; z-index: 2; top: calc(env(safe-area-inset-top) + 12px);
+    right: calc(env(safe-area-inset-right) + 12px);
     display: inline-flex; align-items: center; justify-content: center;
     width: 40px; height: 40px; border: 1px solid #0a7c3a; border-radius: 50%;
-    background: #e0fff1; color: #000; font: bold 22px "Book Antiqua", "Palatino Linotype", Palatino, serif;
+    background: rgba(224, 255, 241, .96); color: #000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+    font: bold 22px "Book Antiqua", "Palatino Linotype", Palatino, serif;
   }
   .rulebook-pdf-viewer {
     flex: 1 1 auto; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch;
     display: flex; flex-direction: column; align-items: center; gap: 10px;
-    padding: 8px; background: #fff; touch-action: pan-y;
+    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+    background: #fff; touch-action: pan-y;
   }
   .rulebook-pdf-viewer .pdf-page { flex: 0 0 auto; }
   .pdf-pages {
@@ -1116,10 +1115,8 @@ function openRulebookPdf(event) {
     class: 'rulebook-pdf-overlay',
     role: 'dialog',
     'aria-modal': 'true',
-    'aria-label': 'Rulebook PDF. Swipe left or right to close.'
+    'aria-label': 'Rulebook pages. Swipe left or right to close.'
   });
-  const header = el('div', { class: 'rulebook-pdf-overlay-header' });
-  header.appendChild(el('span', { class: 'rulebook-pdf-overlay-title', text: 'Rulebook PDF · Swipe to close' }));
   const closeButton = el('button', {
     class: 'rulebook-pdf-close',
     type: 'button',
@@ -1127,8 +1124,7 @@ function openRulebookPdf(event) {
     'aria-label': 'Close PDF and return to Frog Pond'
   });
   closeButton.addEventListener('click', closeRulebookPdf);
-  header.appendChild(closeButton);
-  overlay.appendChild(header);
+  overlay.appendChild(closeButton);
 
   const viewer = el('div', { class: 'rulebook-pdf-viewer', tabindex: '0', 'aria-label': 'Rulebook pages' });
   viewer.innerHTML = rulebookPagesHTML;
