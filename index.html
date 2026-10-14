@@ -437,8 +437,7 @@
     transition: top .18s ease, left .18s ease, width .18s ease, height .18s ease;
   }
   #tutorial-arrow { position: fixed; inset: 0; z-index: 201; overflow: visible; pointer-events: none; }
-  #tutorial-arrow-shaft { position: absolute; height: 5px; border-radius: 99px; background: #fff; transform-origin: 0 50%; box-shadow: 0 2px 5px rgba(0,0,0,.9); }
-  #tutorial-arrow-shaft::after { content: ''; position: absolute; top: 50%; right: -1px; width: 16px; height: 16px; background: #fff; clip-path: polygon(0 0,100% 50%,0 100%,26% 50%); transform: translateY(-50%); filter: drop-shadow(0 1px 2px rgba(0,0,0,.8)); }
+  #tutorial-arrow-image { position: absolute; display: block; width: 58px; height: auto; max-width: none; object-fit: contain; transform-origin: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,.55)); }
   #tutorial-ui { position: fixed; inset: 0; z-index: 200; pointer-events: none; }
   #tutorial-exit {
     position: absolute; top: 10px; right: 12px; z-index: 202; pointer-events: auto;
@@ -509,7 +508,7 @@
 
 <div id="tutorial-dim" hidden aria-hidden="true"></div>
 <div id="tutorial-spotlight" hidden aria-hidden="true"></div>
-<div id="tutorial-arrow" hidden aria-hidden="true"><div id="tutorial-arrow-shaft"></div></div>
+<div id="tutorial-arrow" hidden aria-hidden="true"><img id="tutorial-arrow-image" src="./tutorial-arrow.png" alt="" draggable="false"></div>
 <div id="tutorial-ui" hidden>
   <section id="tutorial-card" role="dialog" aria-live="polite" aria-label="Site tutorial">
     <button id="tutorial-exit" type="button" aria-label="Exit tour" title="Exit tour">×</button>
@@ -1485,17 +1484,25 @@ function positionTutorialOverlay() {
     left=Math.min(vw-cardWidth-16,Math.max(16,rect.left+rect.width/2-cardWidth/2));
   }
   card.style.left=left+'px'; card.style.top=Math.max(8,Math.min(top,vh-cardHeight-8))+'px';
-  const arrowLayer=$('#tutorial-arrow'), arrowShaft=$('#tutorial-arrow-shaft'), arrowTarget=tutorialArrowTarget(step);
+  const arrowLayer=$('#tutorial-arrow'), arrowImage=$('#tutorial-arrow-image'), arrowTarget=tutorialArrowTarget(step);
   if (arrowTarget) {
-    const targetBox=arrowTarget.getBoundingClientRect(), nextBox=$('#tutorial-next').getBoundingClientRect();
-    const sx=nextBox.left+nextBox.width/2, sy=nextBox.top+nextBox.height/2;
+    const targetBox=arrowTarget.getBoundingClientRect(), imageWidth=arrowImage.offsetWidth||58, imageHeight=arrowImage.offsetHeight||58, gap=8;
     const centerX=targetBox.left+targetBox.width/2, centerY=targetBox.top+targetBox.height/2;
-    const towardX=centerX-sx, towardY=centerY-sy, distance=Math.hypot(towardX,towardY)||1;
-    const edge=Math.min(targetBox.width,targetBox.height)/2+5;
-    const tx=centerX-towardX/distance*edge, ty=centerY-towardY/distance*edge;
-    const dx=tx-sx, dy=ty-sy, length=Math.hypot(dx,dy), angle=Math.atan2(dy,dx)*180/Math.PI;
-    arrowShaft.style.left=sx+'px'; arrowShaft.style.top=sy+'px'; arrowShaft.style.width=length+'px';
-    arrowShaft.style.transform='translateY(-50%) rotate('+angle+'deg)';
+    const cardBox=card.getBoundingClientRect();
+    const candidates=[
+      {side:'left', space:targetBox.left, x:targetBox.left-gap-imageWidth/2, y:centerY, angle:0},
+      {side:'right', space:vw-targetBox.right, x:targetBox.right+gap+imageWidth/2, y:centerY, angle:180},
+      {side:'above', space:targetBox.top, x:centerX, y:targetBox.top-gap-imageHeight/2, angle:90},
+      {side:'below', space:vh-targetBox.bottom, x:centerX, y:targetBox.bottom+gap+imageHeight/2, angle:-90}
+    ];
+    const viable=candidates.filter(option=>option.space>=Math.max(imageWidth,imageHeight)+gap);
+    const overlapsCard=option=>option.x+imageWidth/2>cardBox.left && option.x-imageWidth/2<cardBox.right && option.y+imageHeight/2>cardBox.top && option.y-imageHeight/2<cardBox.bottom;
+    const choices=(viable.length?viable:candidates).sort((a,b)=>(Number(overlapsCard(a))-Number(overlapsCard(b))) || b.space-a.space);
+    const chosen=choices[0];
+    const x=Math.max(imageWidth/2+2,Math.min(vw-imageWidth/2-2,chosen.x));
+    const y=Math.max(imageHeight/2+2,Math.min(vh-imageHeight/2-2,chosen.y));
+    arrowImage.style.left=(x-imageWidth/2)+'px'; arrowImage.style.top=(y-imageHeight/2)+'px';
+    arrowImage.style.transform='rotate('+chosen.angle+'deg)';
     arrowLayer.hidden=false;
   } else arrowLayer.hidden=true;
 }
