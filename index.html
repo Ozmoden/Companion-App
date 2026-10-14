@@ -330,6 +330,8 @@
   .ios-sheet-heading h2 { color: #17171a; font-size: 18px; font-weight: 700; }
   .ios-sheet-close { border: 0; padding: 6px 0 6px 12px; background: transparent; color: #087aff; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
   .ios-site-preview { display: flex; align-items: center; gap: 12px; min-height: 72px; padding: 12px; border-radius: 14px; background: #fff; }
+  .ios-site-preview.ios-share-trigger { cursor: pointer; }
+  .ios-site-preview.ios-share-trigger:focus-visible { outline: 2px solid #087aff; outline-offset: 2px; }
   .ios-site-icon { width: 46px; height: 46px; flex: 0 0 46px; border-radius: 11px; object-fit: cover; }
   .ios-site-name { color: #19191d; font-size: 16px; font-weight: 650; }
   .ios-site-url { margin-top: 3px; color: #73737a; font-size: 13px; }
@@ -349,6 +351,12 @@
     pointer-events: none; transform: translateX(-50%) rotate(90deg);
   }
   .ios-share-arrow[hidden] { display: none !important; }
+  .ios-share-arrow-scale { display: grid; place-items: center; animation: ios-share-arrow-pop-in 300ms cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes ios-share-arrow-pop-in {
+    0% { transform: scale(0); }
+    72% { transform: scale(1.16); }
+    100% { transform: scale(1); }
+  }
   .ios-share-arrow img {
     display: block; width: 84px; height: 84px; object-fit: contain;
     filter: drop-shadow(0 2px 5px rgba(0,0,0,.35));
@@ -359,7 +367,7 @@
     top: max(8px, env(safe-area-inset-top)); bottom: auto; transform: rotate(-90deg);
   }
   @media (prefers-reduced-motion: reduce) {
-    .ios-share-arrow img { animation: none; opacity: 1; transform: none; }
+    .ios-share-arrow-scale, .ios-share-arrow img { animation: none; opacity: 1; transform: none; }
   }
   @keyframes ios-sheet-in { from { transform: translateY(24px); opacity: .75; } to { transform: translateY(0); opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { .ios-install-sheet { animation: none; } }
@@ -1220,7 +1228,9 @@ function showIOSInstallPopup(isSafari) {
   let shareArrow = overlay.querySelector('#ios-share-arrow');
   if (!shareArrow) {
     shareArrow = el('div', { id: 'ios-share-arrow', class: 'ios-share-arrow', hidden: true, 'aria-hidden': 'true' });
-    shareArrow.appendChild(el('img', { src: '/tutorial-arrow.png', alt: '', draggable: 'false' }));
+    const arrowScale = el('span', { class: 'ios-share-arrow-scale' });
+    arrowScale.appendChild(el('img', { src: '/tutorial-arrow.png', alt: '', draggable: 'false' }));
+    shareArrow.appendChild(arrowScale);
     overlay.appendChild(shareArrow);
   }
   shareArrow.hidden = true;
@@ -1241,7 +1251,19 @@ function showIOSInstallPopup(isSafari) {
   heading.appendChild(el('button', { class: 'ios-sheet-close', type: 'button', text: 'Done', onclick: closeDialog }));
   box.appendChild(heading);
 
-  const preview = el('div', { class: 'ios-site-preview' });
+  const preview = el('div', {
+    class: 'ios-site-preview ios-share-trigger',
+    role: 'button',
+    tabindex: '0',
+    'aria-label': 'Show where the Safari Share button is',
+    onclick: showShareArrow,
+    onkeydown: event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        showShareArrow();
+      }
+    }
+  });
   preview.appendChild(el('img', { class: 'ios-site-icon', src: '/assets/Buttons/App_Icon_Apple_192_v2.png?v=icon-icc2', alt: '' }));
   const site = el('div');
   site.appendChild(el('div', { class: 'ios-site-name', text: 'Frog Pond' }));
