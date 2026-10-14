@@ -438,11 +438,11 @@
   }
   #tutorial-arrow { position: fixed; inset: 0; z-index: 201; overflow: visible; pointer-events: none; }
   #tutorial-arrow-sprite {
-    position: absolute; display: grid; place-items: center; width: 58px; height: 58px;
+    position: absolute; display: grid; place-items: center; width: 69.6px; height: 69.6px;
     transform-origin: center; will-change: transform;
   }
   #tutorial-arrow-image {
-    display: block; width: 58px; height: auto; max-width: none; object-fit: contain;
+    display: block; width: 69.6px; height: auto; max-width: none; object-fit: contain;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,.55)); will-change: transform;
     animation: tutorial-arrow-bob 2.8s infinite;
   }
@@ -450,7 +450,8 @@
     0% { transform: translateX(0); animation-timing-function: cubic-bezier(.45,0,.55,1); }
     38% { transform: translateX(-8px); animation-timing-function: cubic-bezier(.2,.8,.25,1.2); }
     54% { transform: translateX(1.5px); animation-timing-function: cubic-bezier(.35,0,.2,1); }
-    68% { transform: translateX(-.4px); animation-timing-function: cubic-bezier(.4,0,.2,1); }
+    66% { transform: translateX(-.4px); animation-timing-function: cubic-bezier(.35,0,.2,1); }
+    72% { transform: translateX(.15px); animation-timing-function: cubic-bezier(.4,0,.2,1); }
     78% { transform: translateX(0); }
     100% { transform: translateX(0); }
   }
@@ -1503,7 +1504,7 @@ function positionTutorialOverlay() {
   card.style.left=left+'px'; card.style.top=Math.max(8,Math.min(top,vh-cardHeight-8))+'px';
   const arrowLayer=$('#tutorial-arrow'), arrowSprite=$('#tutorial-arrow-sprite'), arrowImage=$('#tutorial-arrow-image'), arrowTarget=tutorialArrowTarget(step);
   if (arrowTarget) {
-    const targetBox=arrowTarget.getBoundingClientRect(), imageWidth=arrowImage.offsetWidth||58, imageHeight=arrowImage.offsetHeight||58, gap=8;
+    const targetBox=arrowTarget.getBoundingClientRect(), imageWidth=arrowImage.offsetWidth||69.6, imageHeight=arrowImage.offsetHeight||69.6, gap=8;
     const centerX=targetBox.left+targetBox.width/2, centerY=targetBox.top+targetBox.height/2;
     const action=step.action;
     let placement=null;
