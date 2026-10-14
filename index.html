@@ -267,10 +267,16 @@
   }
   .rulebook-pdf-overlay-title { font: bold 17px "Book Antiqua", "Palatino Linotype", Palatino, serif; }
   .rulebook-pdf-close {
-    min-height: 40px; padding: 6px 14px; border: 1px solid #0a7c3a; border-radius: 10px;
-    background: #e0fff1; color: #000; font: bold 14px "Book Antiqua", "Palatino Linotype", Palatino, serif;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border: 1px solid #0a7c3a; border-radius: 50%;
+    background: #e0fff1; color: #000; font: bold 22px "Book Antiqua", "Palatino Linotype", Palatino, serif;
   }
-  .rulebook-pdf-frame { flex: 1 1 auto; width: 100%; min-height: 0; border: 0; background: #fff; }
+  .rulebook-pdf-viewer {
+    flex: 1 1 auto; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    padding: 8px; background: #fff; touch-action: pan-y;
+  }
+  .rulebook-pdf-viewer .pdf-page { flex: 0 0 auto; }
   .pdf-pages {
     flex: 1 1 auto; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch;
     display: flex; flex-direction: column; align-items: center; gap: 10px;
@@ -1102,6 +1108,7 @@ function closeRulebookPdf() {
 let rulebookPdfReturnFocus = null;
 
 function openRulebookPdf(event) {
+  if (!rulebookPagesHTML) return;
   closeRulebookPdf();
   rulebookPdfReturnFocus = event?.currentTarget || null;
   const overlay = el('div', {
@@ -1109,24 +1116,36 @@ function openRulebookPdf(event) {
     class: 'rulebook-pdf-overlay',
     role: 'dialog',
     'aria-modal': 'true',
-    'aria-label': 'Rulebook PDF'
+    'aria-label': 'Rulebook PDF. Swipe left or right to close.'
   });
   const header = el('div', { class: 'rulebook-pdf-overlay-header' });
-  header.appendChild(el('span', { class: 'rulebook-pdf-overlay-title', text: 'Rulebook PDF' }));
+  header.appendChild(el('span', { class: 'rulebook-pdf-overlay-title', text: 'Rulebook PDF · Swipe to close' }));
   const closeButton = el('button', {
     class: 'rulebook-pdf-close',
     type: 'button',
-    text: 'Back to site',
+    text: '×',
     'aria-label': 'Close PDF and return to Frog Pond'
   });
   closeButton.addEventListener('click', closeRulebookPdf);
   header.appendChild(closeButton);
   overlay.appendChild(header);
-  overlay.appendChild(el('iframe', {
-    class: 'rulebook-pdf-frame',
-    src: RULEBOOK_PDF,
-    title: 'Rulebook PDF'
-  }));
+
+  const viewer = el('div', { class: 'rulebook-pdf-viewer', tabindex: '0', 'aria-label': 'Rulebook pages' });
+  viewer.innerHTML = rulebookPagesHTML;
+  let swipeStart = null;
+  viewer.addEventListener('pointerdown', event => {
+    if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
+    swipeStart = { x: event.clientX, y: event.clientY };
+  });
+  viewer.addEventListener('pointerup', event => {
+    if (!swipeStart) return;
+    const dx = event.clientX - swipeStart.x;
+    const dy = event.clientY - swipeStart.y;
+    swipeStart = null;
+    if (Math.abs(dx) >= 80 && Math.abs(dx) > Math.abs(dy) * 1.2) closeRulebookPdf();
+  });
+  viewer.addEventListener('pointercancel', () => { swipeStart = null; });
+  overlay.appendChild(viewer);
   document.body.appendChild(overlay);
   closeButton.focus();
   overlay.addEventListener('keydown', event => {
@@ -1136,6 +1155,7 @@ function openRulebookPdf(event) {
 
 function updateRulebookPageControls() {
   const input = $('#rulebook-page-number');
+  const openButton = $('#rulebook-open-pdf');
   const contentsButton = $('#rulebook-contents');
   const renderedCount = document.querySelectorAll('#pdf-pages .pdf-page').length;
   const availableCount = Math.max(0, renderedCount - 1); // The cover is excluded from user numbering.
@@ -1143,6 +1163,7 @@ function updateRulebookPageControls() {
     input.disabled = availableCount === 0;
     if (availableCount) input.max = String(availableCount);
   }
+  if (openButton) openButton.disabled = renderedCount === 0;
   if (contentsButton) contentsButton.disabled = renderedCount < 4;
 }
 
@@ -1207,7 +1228,8 @@ function renderRulebook() {
   const wrap = el('div', { class: 'rulebook-wrap' });
   // User page numbers start after the cover: input 1 opens PDF page 2.
   const toolbar = el('div', { class: 'rulebook-toolbar' });
-  const openPdfButton = el('button', { class: 'rulebook-action', type: 'button', text: 'Open PDF' });
+  const openPdfButton = el('button', { id: 'rulebook-open-pdf', class: 'rulebook-action', type: 'button', text: 'Open PDF' });
+  openPdfButton.disabled = !rulebookPagesHTML;
   openPdfButton.addEventListener('click', openRulebookPdf);
   toolbar.appendChild(openPdfButton);
 
