@@ -65,6 +65,7 @@
     padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
              calc(var(--tab-sz) + 28px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   }
+  .content.tutorial-scroll-locked { overflow: hidden !important; overscroll-behavior: none; }
 
   /* ---------- Reset button ---------- */
   .reset-btn {
@@ -1584,8 +1585,12 @@ function enterTutorialStep(step) {
   } else if (step.enter === 'filter-icons-top') $('#content').scrollTop=0;
   else if (step.enter === 'prepare-diversion') {
     state.selectedIcons = []; render();
-    const diversion = $('.tutorial-diversion-card');
-    if (diversion) diversion.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const content=$('#content'), diversion=$('.tutorial-diversion-card');
+    if (content && diversion) {
+      const contentBox=content.getBoundingClientRect(), cardBox=diversion.getBoundingClientRect();
+      const visibleCenterY=contentBox.top+content.clientTop+content.clientHeight/2;
+      content.scrollTop += cardBox.top+cardBox.height/2-visibleCenterY;
+    }
   }
 }
 function showTutorialStep() {
@@ -1594,7 +1599,10 @@ function showTutorialStep() {
   if(!step){exitTutorial();return;}
   const show=()=>{
     if(!tutorial.active||TUTORIAL_STEPS[tutorial.index]!==step)return;
-    enterTutorialStep(step); requestAnimationFrame(()=>requestAnimationFrame(positionTutorialOverlay));
+    enterTutorialStep(step);
+    const content=$('#content');
+    content.classList.toggle('tutorial-scroll-locked',['open-diversion','card-fullscreen'].includes(step.action));
+    requestAnimationFrame(()=>requestAnimationFrame(positionTutorialOverlay));
   };
   if(state.activeTab!==step.tab){
     state.fullscreenCard=null;state.modal=null;tutorial.allowTabSwitch=true;animateTabChange(step.tab);tutorial.allowTabSwitch=false;setTimeout(show,540);
@@ -1613,6 +1621,7 @@ function exitTutorial() {
   if(tutorial.scrollRaf)cancelAnimationFrame(tutorial.scrollRaf);
   if(iosInstallSwipeController){iosInstallSwipeController.abort();iosInstallSwipeController=null;}
   $('#tutorial-ui').hidden=true;$('#tutorial-dim').hidden=true;$('#tutorial-spotlight').hidden=true;$('#tutorial-arrow').hidden=true;
+  $('#content').classList.remove('tutorial-scroll-locked');
   $('#dialog-modal').hidden=true;$('#points-modal').hidden=true;$('#fs-modal').hidden=true;
   const box=$('#dialog-box');box.className='modal-box';box.innerHTML='';box.style.transform='';box.style.transition='';
   state.playerNames=snapshot.playerNames;state.tableData=snapshot.tableData;state.points=snapshot.points;state.selectedIcons=snapshot.selectedIcons;
