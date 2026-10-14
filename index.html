@@ -359,6 +359,7 @@
   }
   .ios-share-arrow img {
     display: block; width: 84px; height: 84px; object-fit: contain;
+    opacity: .68;
     filter: drop-shadow(0 2px 5px rgba(0,0,0,.35));
     animation: tutorial-arrow-bob 3.5s infinite;
   }
@@ -367,7 +368,8 @@
     top: max(8px, env(safe-area-inset-top)); bottom: auto; transform: rotate(-90deg);
   }
   @media (prefers-reduced-motion: reduce) {
-    .ios-share-arrow-scale, .ios-share-arrow img { animation: none; opacity: 1; transform: none; }
+    .ios-share-arrow-scale { animation: none; transform: none; }
+    .ios-share-arrow img { animation: none; opacity: .68; transform: none; }
   }
   @keyframes ios-sheet-in { from { transform: translateY(24px); opacity: .75; } to { transform: translateY(0); opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { .ios-install-sheet { animation: none; } }
