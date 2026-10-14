@@ -26,6 +26,12 @@
     --tab-sz:    clamp(44px, 11vw, 68px);
   }
   /* Tiny phones (≤360px): tighten further & reduce padding */
+  @media (max-width: 380px) {
+    .rulebook-toolbar { gap: 4px; }
+    .rulebook-action { flex-basis: 90px; width: clamp(72px, 24vw, 90px); padding: 0 3px; font-size: 12px; }
+    .rulebook-page-controls { gap: 3px; font-size: 11px; }
+    .rulebook-page-controls input { width: 44px; }
+  }
   @media (max-width: 360px) {
     :root { --cell: 24px; --name-w: 58px; --cell-font: 14px; --ticon: 20px; }
     .content { padding: 8px !important; }
@@ -239,15 +245,15 @@
   .rulebook-wrap { display: flex; flex-direction: column; height: 100%; gap: 12px; }
   .rulebook-action {
     box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
-    width: 136px; height: 40px; padding: 0 8px; border: 1px solid #0a7c3a;
-    border-radius: 10px; background: #e0fff1; color: #000;
+    flex: 0 1 clamp(96px, 26vw, 136px); width: clamp(96px, 26vw, 136px); height: 40px; padding: 0 6px;
+    border: 1px solid #0a7c3a; border-radius: 10px; background: #e0fff1; color: #000;
     font: bold 14px "Book Antiqua", "Palatino Linotype", Palatino, serif;
     text-align: center; text-decoration: none; white-space: nowrap; cursor: pointer;
   }
   .rulebook-action:disabled { opacity: .55; cursor: default; }
   .rulebook-toolbar {
-    display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center;
-    justify-content: center; gap: 8px;
+    display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center;
+    justify-content: center; gap: 6px; width: 100%;
   }
   .pdf-pages {
     flex: 1 1 auto; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch;
@@ -256,9 +262,9 @@
   }
   .pdf-page { width: 100%; max-width: 900px; height: auto; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
   .pdf-loading { color: #043; padding: 24px; text-align: center; }
-  .rulebook-page-controls { display: flex; flex: 0 0 auto; align-items: center; gap: 7px; color: #043; font-size: 14px; }
+  .rulebook-page-controls { display: flex; flex: 0 1 auto; align-items: center; gap: 5px; color: #043; font-size: 13px; white-space: nowrap; }
   .rulebook-page-controls label { white-space: nowrap; }
-  .rulebook-page-controls input { width: 58px; height: 40px; padding: 0 4px; border: 1px solid #087a35; border-radius: 8px; background: #fff; color: #111; text-align: center; font: inherit; }
+  .rulebook-page-controls input { width: 50px; height: 40px; padding: 0 3px; border: 1px solid #087a35; border-radius: 8px; background: #fff; color: #111; text-align: center; font: inherit; }
   .rulebook-page-controls input:disabled { opacity: .55; cursor: default; }
 
   /* ---------- Tab bar ---------- */
@@ -1072,7 +1078,6 @@ function getRulebookPdf() {
 
 function updateRulebookPageControls() {
   const input = $('#rulebook-page-number');
-  const jumpButton = $('#rulebook-page-jump');
   const contentsButton = $('#rulebook-contents');
   const renderedCount = document.querySelectorAll('#pdf-pages .pdf-page').length;
   const availableCount = Math.max(0, renderedCount - 1); // The cover is excluded from user numbering.
@@ -1080,7 +1085,6 @@ function updateRulebookPageControls() {
     input.disabled = availableCount === 0;
     if (availableCount) input.max = String(availableCount);
   }
-  if (jumpButton) jumpButton.disabled = availableCount === 0;
   if (contentsButton) contentsButton.disabled = renderedCount < 4;
 }
 
@@ -1161,20 +1165,17 @@ function renderRulebook() {
     max: String(Math.max(1, rulebookPageCount - 1)),
     value: '1',
     inputmode: 'numeric',
-    enterkeyhint: 'go',
+    enterkeyhint: 'done',
     'aria-label': 'Rulebook page number, excluding cover'
   });
+  pageInput.addEventListener('blur', jumpToRulebookPage);
   pageInput.addEventListener('keydown', event => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      jumpToRulebookPage();
+      pageInput.blur(); // Dismiss the keyboard; blur performs the jump.
     }
   });
   controls.appendChild(pageInput);
-  const jumpButton = el('button', { id: 'rulebook-page-jump', class: 'rulebook-action', type: 'button', text: 'Jump to page:' });
-  jumpButton.disabled = !rulebookPagesHTML;
-  jumpButton.addEventListener('click', jumpToRulebookPage);
-  controls.appendChild(jumpButton);
   toolbar.appendChild(controls);
   wrap.appendChild(toolbar);
 
