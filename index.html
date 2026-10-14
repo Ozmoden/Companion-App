@@ -249,8 +249,11 @@
   }
   .pdf-page { width: 100%; max-width: 900px; height: auto; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
   .pdf-loading { color: #043; padding: 24px; text-align: center; }
-  .rulebook-page-controls { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 8px; padding: 2px 0; color: #043; font-size: 15px; }
-  .rulebook-page-controls input { width: 76px; padding: 7px 8px; border: 1px solid #087a35; border-radius: 8px; background: #fff; color: #111; text-align: center; font: inherit; }
+  .rulebook-toolbar { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
+  .rulebook-toolbar .pdf-open-btn { padding: 9px 14px; font-size: 15px; }
+  .rulebook-page-controls { display: flex; flex: 0 0 auto; align-items: center; gap: 7px; padding: 2px 0; color: #043; font-size: 14px; }
+  .rulebook-page-controls label { white-space: nowrap; }
+  .rulebook-page-controls input { width: 62px; padding: 7px 4px; border: 1px solid #087a35; border-radius: 8px; background: #fff; color: #111; text-align: center; font: inherit; }
   .rulebook-page-controls input:disabled { opacity: .55; cursor: default; }
 
   /* ---------- Tab bar ---------- */
@@ -1064,17 +1067,11 @@ function getRulebookPdf() {
 
 function updateRulebookPageControls() {
   const input = $('#rulebook-page-number');
-  const total = $('#rulebook-page-count');
-  if (!input || !total) return;
+  if (!input) return;
   const renderedCount = document.querySelectorAll('#pdf-pages .pdf-page').length;
   const availableCount = Math.max(0, renderedCount - 1); // The cover is excluded from user numbering.
   input.disabled = availableCount === 0;
-  if (availableCount) {
-    input.max = String(availableCount);
-    total.textContent = 'of ' + availableCount;
-  } else {
-    total.textContent = 'of 0';
-  }
+  if (availableCount) input.max = String(availableCount);
 }
 
 function jumpToRulebookPage() {
@@ -1130,8 +1127,10 @@ async function loadRulebook(container) {
 function renderRulebook() {
   const wrap = el('div', { class: 'rulebook-wrap' });
   // User page numbers start after the cover: input 1 opens PDF page 2.
-  wrap.appendChild(el('a', { class: 'pdf-open-btn', href: RULEBOOK_PDF, target: '_blank', text: 'Open Rulebook PDF' }));
+  const toolbar = el('div', { class: 'rulebook-toolbar' });
+  toolbar.appendChild(el('a', { class: 'pdf-open-btn', href: RULEBOOK_PDF, target: '_blank', text: 'Open PDF' }));
   const controls = el('div', { class: 'rulebook-page-controls' });
+  controls.appendChild(el('label', { for: 'rulebook-page-number', text: 'Jump to page:' }));
   const pageInput = el('input', {
     id: 'rulebook-page-number',
     type: 'number',
@@ -1142,18 +1141,25 @@ function renderRulebook() {
     enterkeyhint: 'go',
     'aria-label': 'Rulebook page number, excluding cover'
   });
+  let pageJumpTimer = null;
+  const commitPageJump = () => {
+    clearTimeout(pageJumpTimer);
+    jumpToRulebookPage();
+  };
+  pageInput.addEventListener('input', () => {
+    clearTimeout(pageJumpTimer);
+    pageJumpTimer = setTimeout(jumpToRulebookPage, 800);
+  });
+  pageInput.addEventListener('change', commitPageJump);
   pageInput.addEventListener('keydown', event => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      jumpToRulebookPage();
+      commitPageJump();
     }
   });
   controls.appendChild(pageInput);
-  controls.appendChild(el('span', {
-    id: 'rulebook-page-count',
-    text: rulebookPageCount ? 'of ' + Math.max(0, rulebookPageCount - 1) : 'of —'
-  }));
-  wrap.appendChild(controls);
+  toolbar.appendChild(controls);
+  wrap.appendChild(toolbar);
 
   const pages = el('div', { class: 'pdf-pages', id: 'pdf-pages' });
   if (rulebookPagesHTML) {
