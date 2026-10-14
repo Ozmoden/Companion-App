@@ -372,6 +372,20 @@
   .fs-overlay .card-fallback { width: 60%; height: 60%; font-size: 18px; }
   #fs-content { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
   .fs-card-slide { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .fs-card-slide.is-opening img,
+  .fs-card-slide.is-opening .card-fallback {
+    animation: fullscreen-card-zoom-in 300ms cubic-bezier(.2,.8,.25,1) both;
+    transform-origin: center;
+  }
+  @keyframes fullscreen-card-zoom-in {
+    0% { opacity: 0; transform: scale(.82); }
+    72% { opacity: 1; transform: scale(1.035); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fs-card-slide.is-opening img,
+    .fs-card-slide.is-opening .card-fallback { animation: none; }
+  }
   .fs-card-track { position: absolute; top: 0; bottom: 0; left: 0; display: flex; will-change: transform; }
   .fs-card-track .fs-card-slide { position: relative; inset: auto; flex: 0 0 auto; width: var(--fs-slide-width); height: 100%; }
   .fs-card-track.is-animating { transition: transform 240ms cubic-bezier(.22,.75,.25,1); }
@@ -635,6 +649,8 @@ const state = {
   inputValue: '',
 };
 
+let fullscreenOpening = false;
+
 /* ============================================================
    PERSISTENCE (per-device, private — no backend)
    Saves only the durable game data, not transient UI state like
@@ -894,6 +910,7 @@ function renderCards() {
   filtered.forEach((card, i) => {
     const item = el('div', { class: 'card-item' + (card.name === 'Diversion' ? ' tutorial-diversion-card' : ''), onclick: () => {
       const tutorialDiversionTap = tutorial.active && TUTORIAL_STEPS[tutorial.index]?.action === 'open-diversion' && card.name === 'Diversion';
+      fullscreenOpening = true;
       state.fullscreenCard = i; render();
       if (tutorialDiversionTap) { tutorial.index++; showTutorialStep(); }
     } });
@@ -1308,7 +1325,9 @@ function renderFullscreen() { const box = $('#dialog-box');
   const card = filtered[state.fullscreenCard];
   if (!card) { overlay.hidden = true; return; }
   box.style.transform = ''; box.style.transition = ''; let dragStartY = null; let dragStartTime = 0; [box.querySelector('.ios-sheet-grabber'), box.querySelector('.ios-sheet-heading')].filter(Boolean).forEach(handle => { handle.style.touchAction = 'none'; handle.style.cursor = 'grab'; handle.addEventListener('pointerdown', event => { if (event.target.closest('button')) return; dragStartY = event.clientY; dragStartTime = performance.now(); box.style.transition = 'none'; handle.setPointerCapture(event.pointerId); }); handle.addEventListener('pointermove', event => { if (dragStartY === null) return; box.style.transform = 'translateY(' + Math.max(0, event.clientY - dragStartY) + 'px)'; }); const finishDrag = event => { if (dragStartY === null) return; const distance = Math.max(0, event.clientY - dragStartY); const velocity = distance / Math.max(1, performance.now() - dragStartTime); dragStartY = null; box.style.transition = 'transform .22s ease'; if (distance > 100 || (distance > 35 && velocity > .55)) { box.style.transform = 'translateY(100%)'; setTimeout(closeDialog, 220); } else { box.style.transform = ''; } }; handle.addEventListener('pointerup', finishDrag); handle.addEventListener('pointercancel', finishDrag); }); overlay.hidden = false;
-  const slide = el('div', { class: 'fs-card-slide' });
+  const openingClass = fullscreenOpening ? ' is-opening' : '';
+  fullscreenOpening = false;
+  const slide = el('div', { class: 'fs-card-slide' + openingClass });
   slide.appendChild(imgOrFallback(card.src, '', el('div', { class: 'card-fallback', text: card.name })));
   content.appendChild(slide);
   if (total > 1) {
