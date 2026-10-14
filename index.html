@@ -1488,21 +1488,31 @@ function positionTutorialOverlay() {
   if (arrowTarget) {
     const targetBox=arrowTarget.getBoundingClientRect(), imageWidth=arrowImage.offsetWidth||58, imageHeight=arrowImage.offsetHeight||58, gap=8;
     const centerX=targetBox.left+targetBox.width/2, centerY=targetBox.top+targetBox.height/2;
-    const cardBox=card.getBoundingClientRect();
-    const candidates=[
-      {side:'left', space:targetBox.left, x:targetBox.left-gap-imageWidth/2, y:centerY, angle:0},
-      {side:'right', space:vw-targetBox.right, x:targetBox.right+gap+imageWidth/2, y:centerY, angle:180},
-      {side:'above', space:targetBox.top, x:centerX, y:targetBox.top-gap-imageHeight/2, angle:90},
-      {side:'below', space:vh-targetBox.bottom, x:centerX, y:targetBox.bottom+gap+imageHeight/2, angle:-90}
-    ];
-    const viable=candidates.filter(option=>option.space>=Math.max(imageWidth,imageHeight)+gap);
-    const overlapsCard=option=>option.x+imageWidth/2>cardBox.left && option.x-imageWidth/2<cardBox.right && option.y+imageHeight/2>cardBox.top && option.y-imageHeight/2<cardBox.bottom;
-    const choices=(viable.length?viable:candidates).sort((a,b)=>(Number(overlapsCard(a))-Number(overlapsCard(b))) || b.space-a.space);
-    const chosen=choices[0];
-    const x=Math.max(imageWidth/2+2,Math.min(vw-imageWidth/2-2,chosen.x));
-    const y=Math.max(imageHeight/2+2,Math.min(vh-imageHeight/2-2,chosen.y));
+    const action=step.action;
+    let placement=null;
+    if (action==='tap-add') {
+      const nextBox=$('#tutorial-next').getBoundingClientRect();
+      const x=nextBox.left+nextBox.width/2, y=nextBox.top+nextBox.height/2;
+      placement={x,y,angle:Math.atan2(centerY-y,centerX-x)*180/Math.PI};
+    } else if (['tap-confirm','tap-notice-ok','tap-override'].includes(action)) {
+      placement={x:targetBox.left-gap-imageWidth/2,y:centerY,angle:0};
+    } else {
+      const cardBox=card.getBoundingClientRect();
+      const candidates=[
+        {space:targetBox.left,x:targetBox.left-gap-imageWidth/2,y:centerY,angle:0},
+        {space:vw-targetBox.right,x:targetBox.right+gap+imageWidth/2,y:centerY,angle:180},
+        {space:targetBox.top,x:centerX,y:targetBox.top-gap-imageHeight/2,angle:90},
+        {space:vh-targetBox.bottom,x:centerX,y:targetBox.bottom+gap+imageHeight/2,angle:-90}
+      ];
+      const viable=candidates.filter(option=>option.space>=Math.max(imageWidth,imageHeight)+gap);
+      const overlapsCard=option=>option.x+imageWidth/2>cardBox.left && option.x-imageWidth/2<cardBox.right && option.y+imageHeight/2>cardBox.top && option.y-imageHeight/2<cardBox.bottom;
+      const choices=(viable.length?viable:candidates).sort((a,b)=>(Number(overlapsCard(a))-Number(overlapsCard(b))) || b.space-a.space);
+      placement=choices[0];
+    }
+    const x=Math.max(imageWidth/2+2,Math.min(vw-imageWidth/2-2,placement.x));
+    const y=Math.max(imageHeight/2+2,Math.min(vh-imageHeight/2-2,placement.y));
     arrowImage.style.left=(x-imageWidth/2)+'px'; arrowImage.style.top=(y-imageHeight/2)+'px';
-    arrowImage.style.transform='rotate('+chosen.angle+'deg)';
+    arrowImage.style.transform='rotate('+placement.angle+'deg)';
     arrowLayer.hidden=false;
   } else arrowLayer.hidden=true;
 }
