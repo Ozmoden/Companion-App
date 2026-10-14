@@ -1467,6 +1467,7 @@ document.addEventListener('click', event => {
 function tutorialTargetElements(step) {
   if (!step || !step.target) return [];
   if (step.action === 'tap-override' && tutorial.overrideOpened) return Array.from(document.querySelectorAll('#points-modal .num-btn')).filter(button => button.textContent.trim() === '0');
+  if (step.action === 'card-fullscreen') return Array.from(document.querySelectorAll('#fs-content .fs-card-slide img, #fs-content .fs-card-slide .card-fallback'));
   if (step.target === 'tutorial-points-confirm') {
     const notice = !$('#dialog-modal').hidden;
     return [document.querySelector(notice ? '#dialog-box' : '#points-modal .modal-box')].filter(Boolean);
@@ -1510,10 +1511,31 @@ function positionTutorialOverlay() {
     spotlight.style.width = Math.max(12, rect.width+pad*2) + 'px'; spotlight.style.height = Math.max(12, rect.height+pad*2) + 'px';
     spotlight.style.borderRadius = rect.height > 100 ? '18px' : '14px';
   } else spotlight.hidden = true;
-  const vw=window.innerWidth, vh=window.innerHeight, cardWidth=Math.min(390,vw-32), cardHeight=card.getBoundingClientRect().height||180;
+  const vw=window.innerWidth, vh=window.innerHeight, landscape=vw>vh;
+  let cardWidth=Math.min(390,vw-32), sidePlacement=null;
+  if (landscape && rect && !step.center) {
+    const sideGap=16, leftRoom=Math.max(0,rect.left-32), rightRoom=Math.max(0,vw-rect.right-32);
+    const preferLeft=['poison-filter','tree-filter'].includes(step.action);
+    const preferRight=['tap-confirm','tap-notice-ok','tap-override'].includes(step.action);
+    let side=preferLeft?'left':preferRight?'right':(leftRoom>=rightRoom?'left':'right');
+    let available=side==='left'?leftRoom:rightRoom;
+    if (available<250) {
+      side=side==='left'?'right':'left';
+      available=side==='left'?leftRoom:rightRoom;
+    }
+    if (available>=250) {
+      cardWidth=Math.min(cardWidth,available);
+      sidePlacement={side,left:side==='left'?rect.left-sideGap-cardWidth:rect.right+sideGap};
+    }
+  }
+  card.style.width=cardWidth+'px';
+  const cardHeight=card.getBoundingClientRect().height||180;
   let left=Math.max(16,(vw-cardWidth)/2), top;
   if (step.center || !rect) top=step.center ? Math.max(12,(vh-cardHeight)/2) : Math.max(66,vh-cardHeight-112);
-  else {
+  else if (sidePlacement) {
+    left=sidePlacement.left;
+    top=rect.top+rect.height/2-cardHeight/2;
+  } else {
     const below=rect.bottom+16, above=rect.top-cardHeight-16;
     if (below+cardHeight < vh-112) top=below; else if (above>56) top=above; else top=Math.max(60,vh-cardHeight-112);
     left=Math.min(vw-cardWidth-16,Math.max(16,rect.left+rect.width/2-cardWidth/2));
@@ -1686,6 +1708,24 @@ $('#tutorial-next').addEventListener('click', nextTutorialStep);
 $('#tutorial-back').addEventListener('click', backTutorialStep);
 $('#tutorial-exit').addEventListener('click', exitTutorial);
 $('#content').addEventListener('scroll', () => { if (tutorial.active) positionTutorialOverlay(); }, { passive: true });
+function refreshTutorialLayout() {
+  if (!tutorial.active) return;
+  const step=TUTORIAL_STEPS[tutorial.index];
+  requestAnimationFrame(() => {
+    if (!tutorial.active || TUTORIAL_STEPS[tutorial.index]!==step) return;
+    if (step.action==='open-diversion') {
+      const content=$('#content'), diversion=$('.tutorial-diversion-card');
+      if (content && diversion) {
+        const contentBox=content.getBoundingClientRect(), cardBox=diversion.getBoundingClientRect();
+        const visibleCenterY=contentBox.top+content.clientTop+content.clientHeight/2;
+        content.scrollTop += cardBox.top+cardBox.height/2-visibleCenterY;
+      }
+    }
+    positionTutorialOverlay();
+  });
+}
+window.addEventListener('resize', refreshTutorialLayout, { passive: true });
+window.addEventListener('orientationchange', refreshTutorialLayout, { passive: true });
 
 function renderTabBar() {
   const bar = $('#tab-bar');
