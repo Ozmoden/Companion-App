@@ -1097,6 +1097,12 @@ function getRulebookPdf() {
   return rulebookPdfPromise;
 }
 
+function isStandaloneExperience() {
+  const standaloneMode = window.matchMedia?.('(display-mode: standalone)').matches;
+  const minimalUiMode = window.matchMedia?.('(display-mode: minimal-ui)').matches;
+  return Boolean(window.navigator.standalone || standaloneMode || minimalUiMode);
+}
+
 function closeRulebookPdf() {
   const overlay = $('#rulebook-pdf-overlay');
   if (overlay) overlay.remove();
@@ -1226,7 +1232,13 @@ function renderRulebook() {
   const toolbar = el('div', { class: 'rulebook-toolbar' });
   const openPdfButton = el('button', { id: 'rulebook-open-pdf', class: 'rulebook-action', type: 'button', text: 'Open PDF' });
   openPdfButton.disabled = !rulebookPagesHTML;
-  openPdfButton.addEventListener('click', openRulebookPdf);
+  openPdfButton.addEventListener('click', event => {
+    if (isStandaloneExperience()) {
+      openRulebookPdf(event);
+      return;
+    }
+    window.open(RULEBOOK_PDF, '_blank', 'noopener,noreferrer');
+  });
   toolbar.appendChild(openPdfButton);
 
   const contentsButton = el('button', { id: 'rulebook-contents', class: 'rulebook-action', type: 'button', text: 'Table of Contents' });
