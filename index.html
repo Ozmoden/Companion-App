@@ -140,8 +140,8 @@
     .content.tab-1 .landing-title { grid-column: 1; grid-row: 1 / span 3; margin: auto; }
     .content.tab-1 .landing-title-image { max-width: min(32vw, 250px); max-height: min(70dvh, 310px); }
     .content.tab-1 .install-app-btn { grid-column: 2; grid-row: 1; margin: 0; }
-    .content.tab-1 .contact-btn { grid-column: 2; grid-row: 2; margin: 0; }
-    .content.tab-1 .tutorial-btn { grid-column: 2; grid-row: 3; margin: 0; }
+    .content.tab-1 .tutorial-btn { grid-column: 2; grid-row: 2; margin: 0; }
+    .content.tab-1 .contact-btn { grid-column: 2; grid-row: 3; margin: 0; }
   }
   @media (orientation: portrait) {
     .content.tab-1::before {
@@ -429,12 +429,15 @@
     box-shadow: 0 4px 12px rgba(0,0,0,.28); cursor: pointer;
   }
   .tutorial-btn:active { transform: scale(.96); }
-  #tutorial-spotlight[hidden], #tutorial-ui[hidden] { display: none !important; }
+  #tutorial-dim[hidden], #tutorial-spotlight[hidden], #tutorial-arrow[hidden], #tutorial-ui[hidden] { display: none !important; }
+  #tutorial-dim { position: fixed; inset: 0; z-index: 190; background: rgba(0,0,0,.62); pointer-events: none; }
   #tutorial-spotlight {
-    position: fixed; z-index: 190; pointer-events: none; border: 3px solid rgba(255,255,255,.98);
+    position: fixed; z-index: 191; pointer-events: none; border: 3px solid rgba(255,255,255,.98);
     border-radius: 14px; box-shadow: 0 0 0 100vmax rgba(0,0,0,.62), 0 0 18px 5px rgba(255,255,255,.72);
     transition: top .18s ease, left .18s ease, width .18s ease, height .18s ease;
   }
+  #tutorial-arrow { position: fixed; inset: 0; z-index: 195; width: 100vw; height: 100vh; overflow: visible; pointer-events: none; }
+  #tutorial-arrow path { fill: none; stroke: #fff; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 2px 4px rgba(0,0,0,.8)); }
   #tutorial-ui { position: fixed; inset: 0; z-index: 200; pointer-events: none; }
   #tutorial-exit {
     position: fixed; top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left));
@@ -447,14 +450,17 @@
     border: 1px solid rgba(255,255,255,.88); border-radius: 18px; background: rgba(3,62,56,.96);
     color: #f1fff9; box-shadow: 0 8px 28px rgba(0,0,0,.38); pointer-events: auto;
   }
-  #tutorial-progress { margin-bottom: 8px; color: #b9f5de; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+  #tutorial-progress { margin-bottom: 7px; color: #b9f5de; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+  #tutorial-progress-track { height: 4px; margin-bottom: 12px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.22); }
+  #tutorial-progress-fill { height: 100%; width: 0; border-radius: inherit; background: #b9f5de; transition: width .24s ease; }
+  #tutorial-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
+  #tutorial-back, #tutorial-next { min-width: 94px; padding: 9px 16px; border: 1px solid rgba(255,255,255,.85); border-radius: 12px; color: #fff; font: inherit; font-weight: 750; cursor: pointer; }
+  #tutorial-back { background: rgba(255,255,255,.12); }
+  #tutorial-back:disabled { opacity: .45; cursor: default; }
+  #tutorial-back[hidden], #tutorial-next[hidden] { display: none; }
   #tutorial-copy { color: #fff; font-size: 16px; font-weight: 600; line-height: 1.45; }
-  #tutorial-next {
-    display: block; min-width: 100px; margin: 14px 0 0 auto; padding: 9px 18px;
-    border: 1px solid rgba(255,255,255,.85); border-radius: 12px; background: #0aa879;
-    color: #fff; font: inherit; font-weight: 750; cursor: pointer;
-  }
-  #tutorial-exit:active, #tutorial-next:active { transform: scale(.96); }
+  #tutorial-next { background: #0aa879; margin-left: auto; }
+  #tutorial-exit:active, #tutorial-next:active, #tutorial-back:active { transform: scale(.96); }
   @media (max-width: 420px) {
     #tutorial-card { padding: 14px 15px 12px; }
     #tutorial-copy { font-size: 15px; }
@@ -498,13 +504,16 @@
   <div class="modal-box" id="dialog-box"></div>
 </div>
 
+<div id="tutorial-dim" hidden aria-hidden="true"></div>
 <div id="tutorial-spotlight" hidden aria-hidden="true"></div>
+<svg id="tutorial-arrow" hidden aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none"><defs><marker id="tutorial-arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#fff"></path></marker></defs><path id="tutorial-arrow-path" marker-end="url(#tutorial-arrowhead)"></path></svg>
 <div id="tutorial-ui" hidden>
   <button id="tutorial-exit" type="button">Exit tour</button>
   <section id="tutorial-card" role="dialog" aria-live="polite" aria-label="Site tutorial">
     <div id="tutorial-progress"></div>
+    <div id="tutorial-progress-track" role="progressbar" aria-label="Tutorial progress" aria-valuemin="0" aria-valuemax="29" aria-valuenow="1"><div id="tutorial-progress-fill"></div></div>
     <p id="tutorial-copy"></p>
-    <button id="tutorial-next" type="button">Next</button>
+    <div id="tutorial-actions"><button id="tutorial-back" type="button">Back</button><button id="tutorial-next" type="button">Next</button></div>
   </section>
 </div>
 
@@ -754,37 +763,40 @@ function renderTable() {
   // point tracker
   const box = el('div', { class: 'point-box' });
   box.appendChild(el('div', { class: 'point-label', text: 'Point Total' }));
-  box.appendChild(el('button', { class: 'point-value', text: String(state.points), onclick: openOverride }));
-  box.appendChild(el('button', { class: 'add-btn', text: '+', onclick: openAddPoints }));
+  box.appendChild(el('button', { class: 'point-value', text: String(state.points), onclick: () => { openOverride(); if (tutorial.active && TUTORIAL_STEPS[tutorial.index]?.action === 'tap-override') { tutorial.index++; showTutorialStep(); } } }));
+  box.appendChild(el('button', { class: 'add-btn', text: '+', onclick: () => { openAddPoints(); if (tutorial.active && TUTORIAL_STEPS[tutorial.index]?.action === 'tap-add') { state.inputValue = '12'; render(); tutorial.index++; showTutorialStep(); } } }));
   wrap.appendChild(box);
 
   return wrap;
 }
 
 const TUTORIAL_STEPS = [
-  { tab: 1, section: 'Home', text: 'Welcome to Frog Pond Companion!' },
-  { tab: 1, section: 'Home', text: 'Let me give you a quick tour and show you how I can help!' },
+  { tab: 1, section: 'Home', text: 'Welcome to Frog Pond Companion!', center: true },
+  { tab: 1, section: 'Home', text: 'Let me give you a quick tour and show you how I can help!', center: true },
   { tab: 1, section: 'Home', text: 'This is the Home Tab.', target: '.tab-button[data-tab-index="0"]' },
   { tab: 1, section: 'Home', text: 'You already have full access to all the companion features from your browser, but you also have the option to install the app for quicker access.', target: '.install-app-btn' },
   { tab: 1, section: 'Home', text: 'The home tab has a contact button to get any feedback you have to our team!', target: '.contact-btn' },
   { tab: 2, section: 'Table', text: 'This is your table tab.', target: '.tab-button[data-tab-index="1"]' },
   { tab: 2, section: 'Table', text: 'Here, you can list all the player names.', target: '.theader, .name-input' },
-  { tab: 2, section: 'Table', text: 'Keep track of your suspicions with one tap.', target: '.tutorial-center-cell', action: 'cell' },
+  { tab: 2, section: 'Table', text: 'Keep track of your suspicions with one tap.', target: '.tutorial-center-cell', action: 'cell', enter: 'cell-start' },
   { tab: 2, section: 'Table', text: 'Two taps when a suspicion is confirmed with a spell card.', target: '.tutorial-center-cell', action: 'cell' },
   { tab: 2, section: 'Table', text: 'Three taps for a soft confirmation.', target: '.tutorial-center-cell', action: 'cell' },
   { tab: 2, section: 'Table', text: 'And four taps for a firm confirmation.', target: '.tutorial-center-cell', action: 'cell' },
   { tab: 2, section: 'Table', text: 'A fifth tap resets that cell.', target: '.tutorial-center-cell', action: 'cell' },
   { tab: 2, section: 'Table', text: 'Below is your point total.', target: '.point-box' },
-  { tab: 2, section: 'Table', text: 'When you complete a recipe, hit the plus and input your points.', target: '.add-btn', action: 'open-add' },
-  { tab: 2, section: 'Table', text: 'It will automatically keep track of your running total and alert you to draw an ancient ability every time you collect 10.', target: 'tutorial-points-confirm', action: 'confirm-points' },
-  { tab: 2, section: 'Table', text: 'If your point total is ever wrong, you can override it by pressing on the number.', target: 'tutorial-override-zero', action: 'override-zero' },
+  { tab: 2, section: 'Table', text: 'When you complete a recipe, hit the plus and input your points.', target: '.add-btn', arrowTarget: '.add-btn', action: 'tap-add' },
+  { tab: 2, section: 'Table', text: 'It will automatically keep track of your running total and alert you to draw an ancient ability every time you collect 10.', target: '#points-modal .modal-box', arrowTarget: '#points-modal .modal-confirm', action: 'tap-confirm' },
+  { tab: 2, section: 'Table', text: 'It will automatically keep track of your running total and alert you to draw an ancient ability every time you collect 10.', target: '#dialog-box', arrowTarget: '#dialog-box .modal-confirm', action: 'tap-notice-ok' },
+  { tab: 2, section: 'Table', text: 'If your point total is ever wrong, you can override it by pressing on the number.', target: '.point-value', arrowTarget: '.point-value', action: 'tap-override' },
+  { tab: 2, section: 'Table', text: 'For this example, select 0.', target: '#points-modal .modal-box', arrowTarget: 'tutorial-override-zero', action: 'tap-override-zero' },
   { tab: 2, section: 'Table', text: 'This table will save your state, even if you exit the app.' },
   { tab: 2, section: 'Table', text: 'To start a new game, hit this red reset button in the corner.', target: '#reset-btn' },
   { tab: 3, section: 'Card List', text: 'Now we move on to the card list.', target: '.tab-button[data-tab-index="2"]' },
-  { tab: 3, section: 'Card List', text: 'This tab has all the player cards and ancient abilities so you have your own archive if you ever want to double check another player’s win condition, or strategize which spells you and your allies can use.', target: '.card-grid', enter: 'scroll-cards' },
+  { tab: 3, section: 'Card List', text: 'This tab has all the player cards and ancient abilities so you have your own archive if you ever want to double check another player’s win condition, or strategize which spells you and your allies can use.', target: '.card-grid', enter: 'scroll-cards-bottom' },
   { tab: 3, section: 'Card List', text: 'Across the top are all the player icons.', target: '.filter-icons', enter: 'filter-icons-top' },
-  { tab: 3, section: 'Card List', text: 'Simply tap an icon and the list will filter only the ability cards that player can use. Tap another icon and it will add in the cards that player can use.', target: '.filter-icon[data-icon-filter="P"]', action: 'poison-filter' },
-  { tab: 3, section: 'Card List', text: 'Tap the card to enter full screen mode, and swipe through your options.', target: '#fs-content .fs-card-slide', enter: 'fullscreen-card', action: 'card-fullscreen' },
+  { tab: 3, section: 'Card List', text: 'Simply tap an icon and the list will filter only the ability cards that player can use.', target: '.filter-icon[data-icon-filter="P"]', arrowTarget: '.filter-icon[data-icon-filter="P"]', action: 'poison-filter' },
+  { tab: 3, section: 'Card List', text: 'Tap another icon and it will add in the cards that player can use.', target: '.filter-icon[data-icon-filter="T"]', arrowTarget: '.filter-icon[data-icon-filter="T"]', action: 'tree-filter' },
+  { tab: 3, section: 'Card List', text: 'Tap the card to enter full screen mode, and swipe through your options.', target: '#fs-content .fs-card-slide', enter: 'fullscreen-diversion', action: 'card-fullscreen' },
   { tab: 4, section: 'Rulebook', text: 'Finally the rulebook tab.', target: '.tab-button[data-tab-index="3"]' },
   { tab: 4, section: 'Rulebook', text: 'Pretty self explanatory, now you have your own rulebook so you don’t have to fight over one booklet.' },
   { tab: 1, section: 'Home', text: 'And that’s the tour! I’m always here if you need another go-round!', final: true },
@@ -797,8 +809,8 @@ function renderLanding() {
     class: 'landing-title-image', src: '/assets/Title_Screen_Web.png', alt: 'Scorpion in the Frog Pond', role: 'button', tabindex: '0', 'aria-label': 'Open Table', style: 'cursor:pointer;touch-action:manipulation', onclick: () => animateTabChange(2), onkeydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); animateTabChange(2); } }
   })));
   page.appendChild(el('button', { class: 'install-app-btn', type: 'button', text: 'Install app', onclick: handleInstallApp }));
-  page.appendChild(el('button', { class: 'contact-btn', type: 'button', text: 'Contact', onclick: () => { if (!tutorial.active) openContact(); } }));
   page.appendChild(el('button', { class: 'tutorial-btn', type: 'button', text: 'Tutorial', onclick: startTutorial }));
+  page.appendChild(el('button', { class: 'contact-btn', type: 'button', text: 'Contact', onclick: () => { if (!tutorial.active) openContact(); } }));
   return page;
 }
 
@@ -822,13 +834,13 @@ function renderCards() {
     btn.dataset.iconFilter = ic.key;
     btn.appendChild(imgOrFallback(ic.icon, '', el('div', { class: 'ic-fallback', text: ic.key })));
     btn.addEventListener('click', () => {
-      const tutorialPoisonTap = tutorial.active && TUTORIAL_STEPS[tutorial.index]?.action === 'poison-filter' && ic.key === 'P';
+      const tutorialFilterTap = tutorial.active && ((TUTORIAL_STEPS[tutorial.index]?.action === 'poison-filter' && ic.key === 'P') || (TUTORIAL_STEPS[tutorial.index]?.action === 'tree-filter' && ic.key === 'T'));
       state.selectedIcons = selected
         ? state.selectedIcons.filter(k => k !== ic.key)
         : [...state.selectedIcons, ic.key];
-      if (tutorialPoisonTap) tutorial.index++;
+      if (tutorialFilterTap) tutorial.index++;
       render();
-      if (tutorialPoisonTap) showTutorialStep();
+      if (tutorialFilterTap) showTutorialStep();
     });
     filterRow.appendChild(btn);
   });
@@ -929,7 +941,7 @@ function closeModal()     { state.modal = null; render(); }
 let iosInstallSwipeController = null;
 
 function closeDialog() {
-  const continueTutorialAfterNotice = tutorial.active && tutorial.waitingForNotice;
+  const continueTutorialAfterNotice = tutorial.active && tutorial.waitingForNotice && TUTORIAL_STEPS[tutorial.index]?.action === 'tap-notice-ok';
   if (continueTutorialAfterNotice) { tutorial.waitingForNotice = false; tutorial.index++; }
   if (iosInstallSwipeController) { iosInstallSwipeController.abort(); iosInstallSwipeController = null; }
   const overlay = $('#dialog-modal');
@@ -1185,17 +1197,16 @@ function handleAddPoints() {
   state.points = total % 10;
   state.modal = null; state.inputValue = '';
   render();
-  if (cardsToDraw > 0) {
-    showNotice('Ancient Ability Learned!', `Draw ${cardsToDraw} Ancient Ability card${cardsToDraw > 1 ? 's' : ''}`);
-    if (tutorial.active && TUTORIAL_STEPS[tutorial.index]?.action === 'confirm-points') {
-      tutorial.waitingForNotice = true;
-      requestAnimationFrame(positionTutorialOverlay);
-    }
+  if (cardsToDraw > 0) showNotice('Ancient Ability Learned!', `Draw ${cardsToDraw} Ancient Ability card${cardsToDraw > 1 ? 's' : ''}`);
+  if (tutorial.active && TUTORIAL_STEPS[tutorial.index]?.action === 'tap-confirm') {
+    tutorial.index++;
+    tutorial.waitingForNotice = cardsToDraw > 0;
+    showTutorialStep();
   }
 }
 
 function handleOverride(num) {
-  const tutorialOverride = tutorial.active && TUTORIAL_STEPS[tutorial.index]?.action === 'override-zero';
+  const tutorialOverride = tutorial.active && TUTORIAL_STEPS[tutorial.index]?.action === 'tap-override-zero' && num === 0;
   state.points = num;
   state.modal = null;
   if (tutorialOverride) tutorial.index++;
@@ -1416,225 +1427,167 @@ function tutorialTargetElements(step) {
   if (!step || !step.target) return [];
   if (step.target === 'tutorial-points-confirm') {
     const notice = !$('#dialog-modal').hidden;
-    return [document.querySelector(notice ? '#dialog-box .modal-confirm' : '#points-modal .modal-confirm')].filter(Boolean);
-  }
-  if (step.target === 'tutorial-override-zero') {
-    const zero = Array.from(document.querySelectorAll('#points-modal .num-btn')).find(button => button.textContent.trim() === '0');
-    return [zero || document.querySelector('.point-value')].filter(Boolean);
+    return [document.querySelector(notice ? '#dialog-box' : '#points-modal .modal-box')].filter(Boolean);
   }
   return Array.from(document.querySelectorAll(step.target));
 }
-
+function tutorialArrowTarget(step) {
+  if (!step?.arrowTarget) return null;
+  if (step.arrowTarget === 'tutorial-override-zero') return Array.from(document.querySelectorAll('#points-modal .num-btn')).find(button => button.textContent.trim() === '0') || null;
+  return document.querySelector(step.arrowTarget);
+}
 function positionTutorialOverlay() {
   if (!tutorial.active) return;
-  const ui = $('#tutorial-ui');
-  const card = $('#tutorial-card');
-  const spotlight = $('#tutorial-spotlight');
-  const step = TUTORIAL_STEPS[tutorial.index];
+  const ui = $('#tutorial-ui'), card = $('#tutorial-card'), spotlight = $('#tutorial-spotlight'), step = TUTORIAL_STEPS[tutorial.index];
   if (!step) return;
   ui.hidden = false;
-  $('#tutorial-progress').textContent = step.section + ' · ' + (tutorial.index + 1) + ' of ' + TUTORIAL_STEPS.length;
+  $('#tutorial-progress').textContent = step.section;
   $('#tutorial-copy').textContent = step.text;
+  $('#tutorial-progress-fill').style.width = ((tutorial.index + 1) / TUTORIAL_STEPS.length * 100) + '%';
+  $('#tutorial-progress-track').setAttribute('aria-valuemax', String(TUTORIAL_STEPS.length));
+  $('#tutorial-progress-track').setAttribute('aria-valuenow', String(tutorial.index + 1));
+  const gated = ['cell','tap-add','tap-confirm','tap-notice-ok','tap-override','tap-override-zero','poison-filter','tree-filter'].includes(step.action);
+  $('#tutorial-next').hidden = gated;
   $('#tutorial-next').textContent = step.final ? 'Finish tour' : 'Next';
+  $('#tutorial-back').disabled = tutorial.index === 0;
   const targets = tutorialTargetElements(step);
   let rect = null;
   if (targets.length) {
     const boxes = targets.map(target => target.getBoundingClientRect()).filter(box => box.width || box.height);
     if (boxes.length) {
-      const left = Math.min(...boxes.map(box => box.left));
-      const top = Math.min(...boxes.map(box => box.top));
-      const right = Math.max(...boxes.map(box => box.right));
-      const bottom = Math.max(...boxes.map(box => box.bottom));
-      rect = { left, top, right, bottom, width: right - left, height: bottom - top };
+      const left = Math.min(...boxes.map(box => box.left)), top = Math.min(...boxes.map(box => box.top));
+      const right = Math.max(...boxes.map(box => box.right)), bottom = Math.max(...boxes.map(box => box.bottom));
+      rect = { left, top, right, bottom, width: right-left, height: bottom-top };
     }
   }
+  $('#tutorial-dim').hidden = !!rect;
   if (rect) {
     const pad = 5;
     spotlight.hidden = false;
-    spotlight.style.left = Math.max(4, rect.left - pad) + 'px';
-    spotlight.style.top = Math.max(4, rect.top - pad) + 'px';
-    spotlight.style.width = Math.max(12, rect.width + pad * 2) + 'px';
-    spotlight.style.height = Math.max(12, rect.height + pad * 2) + 'px';
+    spotlight.style.left = Math.max(4, rect.left-pad) + 'px'; spotlight.style.top = Math.max(4, rect.top-pad) + 'px';
+    spotlight.style.width = Math.max(12, rect.width+pad*2) + 'px'; spotlight.style.height = Math.max(12, rect.height+pad*2) + 'px';
     spotlight.style.borderRadius = rect.height > 100 ? '18px' : '14px';
-  } else {
-    spotlight.hidden = true;
+  } else spotlight.hidden = true;
+  const vw=window.innerWidth, vh=window.innerHeight, cardWidth=Math.min(390,vw-32), cardHeight=card.getBoundingClientRect().height||180;
+  let left=Math.max(16,(vw-cardWidth)/2), top;
+  if (step.center || !rect) top=step.center ? Math.max(12,(vh-cardHeight)/2) : Math.max(66,vh-cardHeight-112);
+  else {
+    const below=rect.bottom+16, above=rect.top-cardHeight-16;
+    if (below+cardHeight < vh-112) top=below; else if (above>56) top=above; else top=Math.max(60,vh-cardHeight-112);
+    left=Math.min(vw-cardWidth-16,Math.max(16,rect.left+rect.width/2-cardWidth/2));
   }
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  const cardWidth = Math.min(390, viewportWidth - 32);
-  const cardHeight = card.getBoundingClientRect().height || 160;
-  const safeTop = 12;
-  const bottomClearance = 112;
-  let left = Math.max(16, (viewportWidth - cardWidth) / 2);
-  let top;
-  if (rect) {
-    const below = rect.bottom + 16;
-    const above = rect.top - cardHeight - 16;
-    if (below + cardHeight < viewportHeight - bottomClearance) top = below;
-    else if (above > safeTop + 44) top = above;
-    else top = Math.max(safeTop + 48, viewportHeight - cardHeight - bottomClearance);
-    left = Math.min(viewportWidth - cardWidth - 16, Math.max(16, rect.left + rect.width / 2 - cardWidth / 2));
-  } else {
-    top = Math.max(safeTop + 54, viewportHeight - cardHeight - bottomClearance);
-  }
-  card.style.left = left + 'px';
-  card.style.top = Math.max(8, Math.min(top, viewportHeight - cardHeight - 8)) + 'px';
+  card.style.left=left+'px'; card.style.top=Math.max(8,Math.min(top,vh-cardHeight-8))+'px';
+  const arrowLayer=$('#tutorial-arrow'), arrowPath=$('#tutorial-arrow-path'), arrowTarget=tutorialArrowTarget(step);
+  if (arrowTarget) {
+    const a=arrowTarget.getBoundingClientRect(), b=card.getBoundingClientRect(), tx=a.left+a.width/2, ty=a.top+a.height/2;
+    const sx=Math.max(b.left+14,Math.min(tx,b.right-14));
+    const sy=ty<b.top?b.top:ty>b.bottom?b.bottom:(tx<b.left?b.left:b.right);
+    const cx=(sx+tx)/2, cy=(sy+ty)/2;
+    arrowPath.setAttribute('d','M '+sx+' '+sy+' Q '+(cx+(ty<sy?20:-20))+' '+cy+' '+tx+' '+ty);
+    arrowLayer.hidden=false;
+  } else arrowLayer.hidden=true;
 }
-
 function enterTutorialStep(step) {
   if (!step || tutorial.entered.has(tutorial.index)) return;
   tutorial.entered.add(tutorial.index);
-  if (step.enter === 'scroll-cards') {
-    const content = $('#content');
-    content.scrollTop = Math.min(190, Math.max(0, content.scrollHeight - content.clientHeight));
-  } else if (step.enter === 'filter-icons-top') {
-    $('#content').scrollTop = 0;
-  } else if (step.enter === 'fullscreen-card') {
-    state.selectedIcons = [];
-    state.fullscreenCard = 0;
-    render();
+  if (step.enter === 'cell-start') { state.tableData[3][3]=1; render(); }
+  else if (step.enter === 'scroll-cards-bottom') {
+    const content=$('#content');
+    if (tutorial.scrollRaf) cancelAnimationFrame(tutorial.scrollRaf);
+    const start=content.scrollTop, end=Math.max(0,content.scrollHeight-content.clientHeight), began=performance.now(), duration=2400;
+    const scroll=now=>{
+      if (!tutorial.active || TUTORIAL_STEPS[tutorial.index]!==step) return;
+      const p=Math.min(1,(now-began)/duration), eased=p*p;
+      content.scrollTop=start+(end-start)*eased; positionTutorialOverlay();
+      if(p<1) tutorial.scrollRaf=requestAnimationFrame(scroll); else tutorial.scrollRaf=0;
+    };
+    tutorial.scrollRaf=requestAnimationFrame(scroll);
+  } else if (step.enter === 'filter-icons-top') $('#content').scrollTop=0;
+  else if (step.enter === 'fullscreen-diversion') {
+    state.selectedIcons=[]; state.fullscreenCard=Math.max(0,getFilteredImages().findIndex(card=>card.name==='Diversion')); render();
   }
 }
-
 function showTutorialStep() {
   if (!tutorial.active) return;
-  const step = TUTORIAL_STEPS[tutorial.index];
-  if (!step) { exitTutorial(); return; }
-  const show = () => {
-    if (!tutorial.active || TUTORIAL_STEPS[tutorial.index] !== step) return;
-    enterTutorialStep(step);
-    requestAnimationFrame(() => requestAnimationFrame(positionTutorialOverlay));
+  const step=TUTORIAL_STEPS[tutorial.index];
+  if(!step){exitTutorial();return;}
+  const show=()=>{
+    if(!tutorial.active||TUTORIAL_STEPS[tutorial.index]!==step)return;
+    enterTutorialStep(step); requestAnimationFrame(()=>requestAnimationFrame(positionTutorialOverlay));
   };
-  if (state.activeTab !== step.tab) {
-    state.fullscreenCard = null;
-    state.modal = null;
-    tutorial.allowTabSwitch = true;
-    animateTabChange(step.tab);
-    tutorial.allowTabSwitch = false;
-    setTimeout(show, 540);
-  } else {
-    show();
-  }
+  if(state.activeTab!==step.tab){
+    state.fullscreenCard=null;state.modal=null;tutorial.allowTabSwitch=true;animateTabChange(step.tab);tutorial.allowTabSwitch=false;setTimeout(show,540);
+  } else show();
 }
-
 function startTutorial() {
-  tutorial = {
-    active: true, index: 0, entered: new Set(), allowTabSwitch: false, waitingForNotice: false,
-    snapshot: {
-      activeTab: state.activeTab,
-      playerNames: state.playerNames.slice(),
-      tableData: state.tableData.map(row => row.slice()),
-      points: state.points,
-      selectedIcons: state.selectedIcons.slice(),
-    },
-  };
-  state.activeTab = 1;
-  state.modal = null;
-  state.inputValue = '';
-  state.fullscreenCard = null;
-  state.tableData[3][3] = 0;
-  render();
-  showTutorialStep();
+  tutorial={active:true,index:0,entered:new Set(),allowTabSwitch:false,waitingForNotice:false,scrollRaf:0,snapshot:{
+    activeTab:state.activeTab,playerNames:state.playerNames.slice(),tableData:state.tableData.map(row=>row.slice()),points:state.points,selectedIcons:state.selectedIcons.slice()
+  }};
+  state.activeTab=1;state.modal=null;state.inputValue='';state.fullscreenCard=null;state.selectedIcons=[];state.tableData[3][3]=0;render();showTutorialStep();
 }
-
 function exitTutorial() {
-  if (!tutorial.active) return;
-  const snapshot = tutorial.snapshot;
-  tutorial.active = false;
-  tutorial.waitingForNotice = false;
-  tutorial.allowTabSwitch = false;
-  if (iosInstallSwipeController) { iosInstallSwipeController.abort(); iosInstallSwipeController = null; }
-  $('#tutorial-ui').hidden = true;
-  $('#tutorial-spotlight').hidden = true;
-  $('#dialog-modal').hidden = true;
-  $('#points-modal').hidden = true;
-  $('#fs-modal').hidden = true;
-  const box = $('#dialog-box');
-  box.className = 'modal-box';
-  box.innerHTML = '';
-  box.style.transform = '';
-  box.style.transition = '';
-  state.playerNames = snapshot.playerNames;
-  state.tableData = snapshot.tableData;
-  state.points = snapshot.points;
-  state.selectedIcons = snapshot.selectedIcons;
-  state.modal = null;
-  state.inputValue = '';
-  state.fullscreenCard = null;
-  state.activeTab = snapshot.activeTab || 1;
-  render();
+  if(!tutorial.active)return;
+  const snapshot=tutorial.snapshot;
+  tutorial.active=false;tutorial.waitingForNotice=false;tutorial.allowTabSwitch=false;
+  if(tutorial.scrollRaf)cancelAnimationFrame(tutorial.scrollRaf);
+  if(iosInstallSwipeController){iosInstallSwipeController.abort();iosInstallSwipeController=null;}
+  $('#tutorial-ui').hidden=true;$('#tutorial-dim').hidden=true;$('#tutorial-spotlight').hidden=true;$('#tutorial-arrow').hidden=true;
+  $('#dialog-modal').hidden=true;$('#points-modal').hidden=true;$('#fs-modal').hidden=true;
+  const box=$('#dialog-box');box.className='modal-box';box.innerHTML='';box.style.transform='';box.style.transition='';
+  state.playerNames=snapshot.playerNames;state.tableData=snapshot.tableData;state.points=snapshot.points;state.selectedIcons=snapshot.selectedIcons;
+  state.modal=null;state.inputValue='';state.fullscreenCard=null;state.activeTab=snapshot.activeTab||1;render();
 }
-
 function nextTutorialStep() {
-  if (!tutorial.active) return;
-  const step = TUTORIAL_STEPS[tutorial.index];
-  if (!step) return;
-  if (step.final) { exitTutorial(); return; }
-  if (step.action === 'cell') {
-    document.querySelector('.tutorial-center-cell')?.click();
-    return;
-  }
-  if (step.action === 'open-add') {
-    document.querySelector('.add-btn')?.click();
-    state.inputValue = '12';
-    render();
-    tutorial.index++;
-    showTutorialStep();
-    return;
-  }
-  if (step.action === 'confirm-points') {
-    const selector = tutorial.waitingForNotice ? '#dialog-box .modal-confirm' : '#points-modal .modal-confirm';
-    document.querySelector(selector)?.click();
-    return;
-  }
-  if (step.action === 'override-zero') {
-    state.modal = 'override';
-    render();
-    requestAnimationFrame(() => setTimeout(() => {
-      if (!tutorial.active || TUTORIAL_STEPS[tutorial.index] !== step) return;
-      const zero = Array.from(document.querySelectorAll('#points-modal .num-btn')).find(button => button.textContent.trim() === '0');
-      zero?.click();
-    }, 650));
-    return;
-  }
-  if (step.action === 'poison-filter') {
-    document.querySelector('.filter-icon[data-icon-filter="P"]')?.click();
-    return;
-  }
-  if (step.action === 'card-fullscreen') {
-    state.fullscreenCard = null;
-    tutorial.index++;
-    showTutorialStep();
-    return;
-  }
-  tutorial.index++;
+  if(!tutorial.active)return;
+  const step=TUTORIAL_STEPS[tutorial.index];
+  if(!step||step.action&&['cell','tap-add','tap-confirm','tap-notice-ok','tap-override','tap-override-zero','poison-filter','tree-filter'].includes(step.action))return;
+  if(step.final){exitTutorial();return;}
+  if(tutorial.scrollRaf){cancelAnimationFrame(tutorial.scrollRaf);tutorial.scrollRaf=0;}
+  if(step.action==='card-fullscreen')state.fullscreenCard=null;
+  tutorial.index++;showTutorialStep();
+}
+function backTutorialStep() {
+  if(!tutorial.active||tutorial.index===0)return;
+  if(tutorial.scrollRaf){cancelAnimationFrame(tutorial.scrollRaf);tutorial.scrollRaf=0;}
+  tutorial.index--;tutorial.entered.delete(tutorial.index);
+  const i=tutorial.index,snapshot=tutorial.snapshot;
+  tutorial.waitingForNotice=false;state.modal=null;state.inputValue='';state.fullscreenCard=null;
+  $('#dialog-modal').hidden=true;$('#dialog-box').innerHTML='';
+  state.activeTab=TUTORIAL_STEPS[i].tab;state.playerNames=snapshot.playerNames.slice();state.tableData=snapshot.tableData.map(row=>row.slice());
+  state.points=snapshot.points;state.selectedIcons=[];
+  if(i>=7&&i<=11)state.tableData[3][3]=(i-7)%5;
+  if(i>=15&&i<=17)state.points=(snapshot.points+12)%10;
+  if(i>=18)state.points=0;
+  if(i===24)state.selectedIcons=['P'];
+  if(i===14){state.modal='add';state.inputValue='12';}
+  else if(i===15)tutorial.waitingForNotice=true;
+  else if(i===17)state.modal='override';
+  if(i>=25)state.selectedIcons=[];
+  render();
+  if(i===15)showNotice('Ancient Ability Learned!','Draw 1 Ancient Ability card');
   showTutorialStep();
 }
-
 document.addEventListener('click', event => {
-  if (!tutorial.active) return;
-  const target = event.target instanceof Element ? event.target : null;
-  if (!target || target.closest('#tutorial-card, #tutorial-exit')) return;
-  const step = TUTORIAL_STEPS[tutorial.index];
-  let allowed = false;
-  if (step?.action === 'cell') allowed = !!target.closest('.tutorial-center-cell');
-  if (step?.action === 'open-add') allowed = !!target.closest('.add-btn');
-  if (step?.action === 'poison-filter') allowed = !!target.closest('.filter-icon[data-icon-filter="P"]');
-  if (step?.action === 'override-zero') {
-    const numberButton = target.closest('#points-modal .num-btn');
-    allowed = !!target.closest('.point-value') || !!(numberButton && numberButton.textContent.trim() === '0');
-  }
-  if (step?.action === 'confirm-points') {
-    allowed = !!target.closest('#points-modal .modal-confirm') ||
-      (tutorial.waitingForNotice && !!target.closest('#dialog-box .modal-confirm'));
-  }
-  if (step?.action === 'card-fullscreen') allowed = !!target.closest('#fs-close, #fs-modal .fs-nav');
-  if (allowed) return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-}, true);
+  if(!tutorial.active)return;
+  const target=event.target instanceof Element?event.target:null;
+  if(!target||target.closest('#tutorial-card, #tutorial-exit'))return;
+  const step=TUTORIAL_STEPS[tutorial.index];let allowed=false;
+  if(step?.action==='cell')allowed=!!target.closest('.tutorial-center-cell');
+  if(step?.action==='tap-add')allowed=!!target.closest('.add-btn');
+  if(step?.action==='tap-confirm')allowed=!!target.closest('#points-modal .modal-confirm');
+  if(step?.action==='tap-notice-ok')allowed=!!target.closest('#dialog-box .modal-confirm');
+  if(step?.action==='tap-override')allowed=!!target.closest('.point-value');
+  if(step?.action==='tap-override-zero'){const zero=target.closest('#points-modal .num-btn');allowed=!!(zero&&zero.textContent.trim()==='0');}
+  if(step?.action==='poison-filter')allowed=!!target.closest('.filter-icon[data-icon-filter="P"]');
+  if(step?.action==='tree-filter')allowed=!!target.closest('.filter-icon[data-icon-filter="T"]');
+  if(step?.action==='card-fullscreen')allowed=!!target.closest('#fs-close, #fs-modal .fs-nav');
+  if(allowed)return;
+  event.preventDefault();event.stopImmediatePropagation();
+},true);
+
 
 $('#tutorial-next').addEventListener('click', nextTutorialStep);
+$('#tutorial-back').addEventListener('click', backTutorialStep);
 $('#tutorial-exit').addEventListener('click', exitTutorial);
 
 function renderTabBar() {
