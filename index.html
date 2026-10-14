@@ -372,20 +372,6 @@
   .fs-overlay .card-fallback { width: 60%; height: 60%; font-size: 18px; }
   #fs-content { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
   .fs-card-slide { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-  .fs-card-slide.is-opening img,
-  .fs-card-slide.is-opening .card-fallback {
-    animation: fullscreen-card-zoom-in 300ms cubic-bezier(.2,.8,.25,1) both;
-    transform-origin: center;
-  }
-  @keyframes fullscreen-card-zoom-in {
-    0% { opacity: 0; transform: scale(.82); }
-    72% { opacity: 1; transform: scale(1.035); }
-    100% { opacity: 1; transform: scale(1); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .fs-card-slide.is-opening img,
-    .fs-card-slide.is-opening .card-fallback { animation: none; }
-  }
   .fs-card-track { position: absolute; top: 0; bottom: 0; left: 0; display: flex; will-change: transform; }
   .fs-card-track .fs-card-slide { position: relative; inset: auto; flex: 0 0 auto; width: var(--fs-slide-width); height: 100%; }
   .fs-card-track.is-animating { transition: transform 240ms cubic-bezier(.22,.75,.25,1); }
@@ -649,7 +635,80 @@ const state = {
   inputValue: '',
 };
 
-let fullscreenOpening = false;
+let fullscreenOpenOrigin = null;
+let fullscreenFlight = null;
+
+function cancelFullscreenCardFlight() {
+  if (!fullscreenFlight) return;
+  const flight = fullscreenFlight;
+  fullscreenFlight = null;
+  flight.animation?.cancel();
+  flight.backgroundAnimation?.cancel();
+  flight.target.style.visibility = flight.originalVisibility;
+  flight.ghost.remove();
+  flight.overlay.style.backgroundColor = '';
+}
+
+async function animateFullscreenCardFromPreview(origin, slide, overlay) {
+  if (!origin || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const initialVisual = slide.querySelector('img, .card-fallback');
+  if (initialVisual instanceof HTMLImageElement && !initialVisual.complete) {
+    await Promise.race([
+      new Promise(resolve => {
+        initialVisual.addEventListener('load', resolve, { once: true });
+        initialVisual.addEventListener('error', resolve, { once: true });
+      }),
+      new Promise(resolve => setTimeout(resolve, 500))
+    ]);
+  }
+
+  const target = slide.querySelector('img, .card-fallback');
+  if (!target || !slide.isConnected || !overlay.isConnected) return;
+  const end = target.getBoundingClientRect();
+  if (!end.width || !end.height) return;
+
+  cancelFullscreenCardFlight();
+  const ghost = origin.node.cloneNode(true);
+  const start = origin.rect;
+  Object.assign(ghost.style, {
+    position: 'fixed',
+    zIndex: '1000',
+    left: start.left + 'px',
+    top: start.top + 'px',
+    width: start.width + 'px',
+    height: start.height + 'px',
+    maxWidth: 'none',
+    maxHeight: 'none',
+    margin: '0',
+    objectFit: 'contain',
+    borderRadius: origin.borderRadius,
+    boxShadow: origin.boxShadow,
+    pointerEvents: 'none',
+    transform: 'none'
+  });
+
+  const originalVisibility = target.style.visibility;
+  target.style.visibility = 'hidden';
+  overlay.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+  document.body.appendChild(ghost);
+  const flight = { ghost, target, originalVisibility, overlay, animation: null, backgroundAnimation: null };
+  fullscreenFlight = flight;
+  flight.animation = ghost.animate([
+    { left: start.left + 'px', top: start.top + 'px', width: start.width + 'px', height: start.height + 'px', borderRadius: origin.borderRadius },
+    { left: end.left + 'px', top: end.top + 'px', width: end.width + 'px', height: end.height + 'px', borderRadius: getComputedStyle(target).borderRadius }
+  ], { duration: 360, easing: 'cubic-bezier(.2,.75,.25,1)', fill: 'forwards' });
+  flight.backgroundAnimation = overlay.animate([
+    { backgroundColor: 'rgba(0, 0, 0, 0)' },
+    { backgroundColor: 'rgba(0, 0, 0, 0.9)' }
+  ], { duration: 300, easing: 'ease-out', fill: 'forwards' });
+
+  try { await flight.animation.finished; } catch {}
+  if (fullscreenFlight !== flight) return;
+  target.style.visibility = originalVisibility;
+  ghost.remove();
+  overlay.style.backgroundColor = '';
+  fullscreenFlight = null;
+}
 
 /* ============================================================
    PERSISTENCE (per-device, private — no backend)
@@ -910,7 +969,14 @@ function renderCards() {
   filtered.forEach((card, i) => {
     const item = el('div', { class: 'card-item' + (card.name === 'Diversion' ? ' tutorial-diversion-card' : ''), onclick: () => {
       const tutorialDiversionTap = tutorial.active && TUTORIAL_STEPS[tutorial.index]?.action === 'open-diversion' && card.name === 'Diversion';
-      fullscreenOpening = true;
+      const preview = item.querySelector('img, .card-fallback');
+      const rect = preview?.getBoundingClientRect();
+      fullscreenOpenOrigin = preview && rect?.width && rect?.height ? {
+        node: preview.cloneNode(true),
+        rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+        borderRadius: getComputedStyle(preview).borderRadius,
+        boxShadow: getComputedStyle(preview).boxShadow
+      } : null;
       state.fullscreenCard = i; render();
       if (tutorialDiversionTap) { tutorial.index++; showTutorialStep(); }
     } });
@@ -1319,17 +1385,23 @@ function renderFullscreen() { const box = $('#dialog-box');
   const content = $('#fs-content');
   content.innerHTML = '';
   overlay.querySelectorAll('.fs-nav').forEach(button => button.remove());
-  if (state.fullscreenCard === null) { overlay.hidden = true; return; }
+  if (state.fullscreenCard === null) {
+    cancelFullscreenCardFlight();
+    fullscreenOpenOrigin = null;
+    overlay.hidden = true;
+    return;
+  }
   const filtered = getFilteredImages();
   const total = filtered.length;
   const card = filtered[state.fullscreenCard];
   if (!card) { overlay.hidden = true; return; }
   box.style.transform = ''; box.style.transition = ''; let dragStartY = null; let dragStartTime = 0; [box.querySelector('.ios-sheet-grabber'), box.querySelector('.ios-sheet-heading')].filter(Boolean).forEach(handle => { handle.style.touchAction = 'none'; handle.style.cursor = 'grab'; handle.addEventListener('pointerdown', event => { if (event.target.closest('button')) return; dragStartY = event.clientY; dragStartTime = performance.now(); box.style.transition = 'none'; handle.setPointerCapture(event.pointerId); }); handle.addEventListener('pointermove', event => { if (dragStartY === null) return; box.style.transform = 'translateY(' + Math.max(0, event.clientY - dragStartY) + 'px)'; }); const finishDrag = event => { if (dragStartY === null) return; const distance = Math.max(0, event.clientY - dragStartY); const velocity = distance / Math.max(1, performance.now() - dragStartTime); dragStartY = null; box.style.transition = 'transform .22s ease'; if (distance > 100 || (distance > 35 && velocity > .55)) { box.style.transform = 'translateY(100%)'; setTimeout(closeDialog, 220); } else { box.style.transform = ''; } }; handle.addEventListener('pointerup', finishDrag); handle.addEventListener('pointercancel', finishDrag); }); overlay.hidden = false;
-  const openingClass = fullscreenOpening ? ' is-opening' : '';
-  fullscreenOpening = false;
-  const slide = el('div', { class: 'fs-card-slide' + openingClass });
+  const openingOrigin = fullscreenOpenOrigin;
+  fullscreenOpenOrigin = null;
+  const slide = el('div', { class: 'fs-card-slide' });
   slide.appendChild(imgOrFallback(card.src, '', el('div', { class: 'card-fallback', text: card.name })));
   content.appendChild(slide);
+  if (openingOrigin) requestAnimationFrame(() => animateFullscreenCardFromPreview(openingOrigin, slide, overlay));
   if (total > 1) {
     overlay.appendChild(el('button', { class: 'fs-nav fs-prev', text: '‹', onclick: e => { e.stopPropagation(); transitionFullscreenCard(-1); } }));
     overlay.appendChild(el('button', { class: 'fs-nav fs-next', text: '›', onclick: e => { e.stopPropagation(); transitionFullscreenCard(1); } }));
