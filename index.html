@@ -255,6 +255,22 @@
     display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center;
     justify-content: center; gap: 6px; width: 100%;
   }
+  .rulebook-pdf-overlay {
+    position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column;
+    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+    background: #fff; color: #043;
+  }
+  .rulebook-pdf-overlay[hidden] { display: none; }
+  .rulebook-pdf-overlay-header {
+    display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between;
+    min-height: 48px; gap: 12px; padding: 4px 2px 8px;
+  }
+  .rulebook-pdf-overlay-title { font: bold 17px "Book Antiqua", "Palatino Linotype", Palatino, serif; }
+  .rulebook-pdf-close {
+    min-height: 40px; padding: 6px 14px; border: 1px solid #0a7c3a; border-radius: 10px;
+    background: #e0fff1; color: #000; font: bold 14px "Book Antiqua", "Palatino Linotype", Palatino, serif;
+  }
+  .rulebook-pdf-frame { flex: 1 1 auto; width: 100%; min-height: 0; border: 0; background: #fff; }
   .pdf-pages {
     flex: 1 1 auto; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch;
     display: flex; flex-direction: column; align-items: center; gap: 10px;
@@ -1076,6 +1092,48 @@ function getRulebookPdf() {
   return rulebookPdfPromise;
 }
 
+function closeRulebookPdf() {
+  const overlay = $('#rulebook-pdf-overlay');
+  if (overlay) overlay.remove();
+  if (rulebookPdfReturnFocus?.isConnected) rulebookPdfReturnFocus.focus();
+  rulebookPdfReturnFocus = null;
+}
+
+let rulebookPdfReturnFocus = null;
+
+function openRulebookPdf(event) {
+  closeRulebookPdf();
+  rulebookPdfReturnFocus = event?.currentTarget || null;
+  const overlay = el('div', {
+    id: 'rulebook-pdf-overlay',
+    class: 'rulebook-pdf-overlay',
+    role: 'dialog',
+    'aria-modal': 'true',
+    'aria-label': 'Rulebook PDF'
+  });
+  const header = el('div', { class: 'rulebook-pdf-overlay-header' });
+  header.appendChild(el('span', { class: 'rulebook-pdf-overlay-title', text: 'Rulebook PDF' }));
+  const closeButton = el('button', {
+    class: 'rulebook-pdf-close',
+    type: 'button',
+    text: 'Back to site',
+    'aria-label': 'Close PDF and return to Frog Pond'
+  });
+  closeButton.addEventListener('click', closeRulebookPdf);
+  header.appendChild(closeButton);
+  overlay.appendChild(header);
+  overlay.appendChild(el('iframe', {
+    class: 'rulebook-pdf-frame',
+    src: RULEBOOK_PDF,
+    title: 'Rulebook PDF'
+  }));
+  document.body.appendChild(overlay);
+  closeButton.focus();
+  overlay.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeRulebookPdf();
+  });
+}
+
 function updateRulebookPageControls() {
   const input = $('#rulebook-page-number');
   const contentsButton = $('#rulebook-contents');
@@ -1149,7 +1207,9 @@ function renderRulebook() {
   const wrap = el('div', { class: 'rulebook-wrap' });
   // User page numbers start after the cover: input 1 opens PDF page 2.
   const toolbar = el('div', { class: 'rulebook-toolbar' });
-  toolbar.appendChild(el('a', { class: 'rulebook-action', href: RULEBOOK_PDF, target: '_blank', text: 'Open PDF' }));
+  const openPdfButton = el('button', { class: 'rulebook-action', type: 'button', text: 'Open PDF' });
+  openPdfButton.addEventListener('click', openRulebookPdf);
+  toolbar.appendChild(openPdfButton);
 
   const contentsButton = el('button', { id: 'rulebook-contents', class: 'rulebook-action', type: 'button', text: 'Table of Contents' });
   contentsButton.disabled = rulebookPageCount < 4;
