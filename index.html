@@ -352,14 +352,7 @@
   .ios-share-arrow img {
     display: block; width: 84px; height: 84px; object-fit: contain;
     filter: drop-shadow(0 2px 5px rgba(0,0,0,.35));
-    animation: ios-share-arrow-pop 1.5s ease-in-out infinite;
-  }
-  @keyframes ios-share-arrow-pop {
-    0%, 100% { opacity: 0; transform: translateY(-16px) scale(.78); }
-    18% { opacity: 1; }
-    46% { opacity: 1; transform: translateY(0) scale(1.06); }
-    60% { transform: translateY(3px) scale(.98); }
-    76% { opacity: 1; transform: translateY(0) scale(1); }
+    animation: tutorial-arrow-bob 3.5s infinite;
   }
   .ios-share-arrow.is-tablet {
     left: auto; right: max(18px, env(safe-area-inset-right));
