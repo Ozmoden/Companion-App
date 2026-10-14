@@ -1506,11 +1506,18 @@ function positionTutorialOverlay() {
   card.style.left=left+'px'; card.style.top=Math.max(8,Math.min(top,vh-cardHeight-8))+'px';
   const arrowLayer=$('#tutorial-arrow'), arrowSprite=$('#tutorial-arrow-sprite'), arrowImage=$('#tutorial-arrow-image'), arrowTarget=tutorialArrowTarget(step);
   if (arrowTarget) {
-    const targetBox=arrowTarget.getBoundingClientRect(), imageWidth=arrowImage.offsetWidth||83.52, imageHeight=arrowImage.offsetHeight||83.52, gap=8;
+    const targetBox=arrowTarget.getBoundingClientRect(), gap=8;
     const centerX=targetBox.left+targetBox.width/2, centerY=targetBox.top+targetBox.height/2;
-    const action=step.action;
+    const action=step.action, isFilterArrow=['poison-filter','tree-filter'].includes(action);
+    const availableRight=vw-targetBox.right-gap-4;
+    const arrowSize=isFilterArrow ? Math.max(28,Math.min(83.52,availableRight)) : 83.52;
+    const imageWidth=arrowSize, imageHeight=arrowSize;
+    arrowSprite.style.width=arrowSize+'px'; arrowSprite.style.height=arrowSize+'px';
+    arrowImage.style.width=arrowSize+'px';
     let placement=null;
-    if (action==='tap-add') {
+    if (isFilterArrow) {
+      placement={x:targetBox.right+gap+imageWidth/2,y:centerY,angle:180};
+    } else if (action==='tap-add') {
       const nextBox=$('#tutorial-next').getBoundingClientRect();
       const x=nextBox.left+nextBox.width/2, y=nextBox.top+nextBox.height/2;
       placement={x,y,angle:Math.atan2(centerY-y,centerX-x)*180/Math.PI};
