@@ -1004,6 +1004,7 @@ function ensurePdfJs() {
   return new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.fetchPriority = 'low';
     s.onload = () => {
       window.pdfjsLib.GlobalWorkerOptions.workerSrc =
         'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -1014,12 +1015,24 @@ function ensurePdfJs() {
   });
 }
 
+let rulebookPdfPromise = null;
+function getRulebookPdf() {
+  if (!rulebookPdfPromise) {
+    rulebookPdfPromise = ensurePdfJs()
+      .then(pdfjsLib => pdfjsLib.getDocument(RULEBOOK_PDF).promise)
+      .catch(error => {
+        rulebookPdfPromise = null;
+        throw error;
+      });
+  }
+  return rulebookPdfPromise;
+}
+
 async function loadRulebook(container) {
   if (rulebookRendering) return;
   rulebookRendering = true;
   try {
-    const pdfjsLib = await ensurePdfJs();
-    const pdf = await pdfjsLib.getDocument(RULEBOOK_PDF).promise;
+    const pdf = await getRulebookPdf();
     const targetW = Math.min((container.clientWidth || 800) - 20, 1000);
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const imgs = [];
@@ -1953,26 +1966,34 @@ if (Math.abs(dx) >= 48 && Math.abs(dx) > Math.abs(dy)) { const overlaysOpen = !$
 loadState();
 render();
 
-// Asset load ordering:
-//  1) the browser loads the immediate page assets (icons, buttons, video) — we
-//     wait for window 'load' so those finish first;
-//  2) then we warm the compressed card thumbnails (the next thing a user sees);
-//  3) only once those are done do we pull the heavy full-res originals in the
-//     background, so they never compete with anything the user is waiting on.
+// Warm lower-priority assets in sequence: rulebook first, then card thumbnails,
+// then full-resolution cards. The rulebook document promise is shared with the
+// Rulebook tab, so opening it during warm-up continues the same load.
 function preloadAll(urls) {
-  return Promise.all(urls.map(u => new Promise(res => {
+  return Promise.all(urls.map(url => new Promise(resolve => {
     const img = new Image();
-    img.onload = img.onerror = res;
-    img.src = u;
+    img.fetchPriority = 'low';
+    img.onload = img.onerror = resolve;
+    img.src = url;
   })));
 }
-window.addEventListener('load', () => {
+
+function preloadCardImages() {
   const compressed = ABILITY_IMAGES.map(card => thumbSrc(card.src));
   preloadAll(compressed).then(() => {
-    // high-res, fire-and-forget in the background
-    ABILITY_IMAGES.forEach(card => { const img = new Image(); img.src = card.src; });
+    // Keep full-resolution art behind the compressed previews in the queue.
+    ABILITY_IMAGES.forEach(card => {
+      const img = new Image();
+      img.fetchPriority = 'low';
+      img.src = card.src;
+    });
   });
-});
+}
+
+// Begin the rulebook request as soon as the app has rendered, then warm card art.
+getRulebookPdf()
+  .catch(() => null)
+  .then(preloadCardImages);
 </script>
 </body>
 </html>
