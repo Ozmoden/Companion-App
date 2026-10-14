@@ -437,7 +437,24 @@
     transition: top .18s ease, left .18s ease, width .18s ease, height .18s ease;
   }
   #tutorial-arrow { position: fixed; inset: 0; z-index: 201; overflow: visible; pointer-events: none; }
-  #tutorial-arrow-image { position: absolute; display: block; width: 58px; height: auto; max-width: none; object-fit: contain; transform-origin: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,.55)); }
+  #tutorial-arrow-sprite {
+    position: absolute; display: grid; place-items: center; width: 58px; height: 58px;
+    transform-origin: center; will-change: transform;
+  }
+  #tutorial-arrow-image {
+    display: block; width: 58px; height: auto; max-width: none; object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.55)); will-change: transform;
+    animation: tutorial-arrow-bob 2.8s infinite;
+  }
+  @keyframes tutorial-arrow-bob {
+    0% { transform: translateX(0); animation-timing-function: cubic-bezier(.4,0,.7,.3); }
+    38% { transform: translateX(-8px); animation-timing-function: cubic-bezier(.16,1,.3,1); }
+    48% { transform: translateX(2px); animation-timing-function: ease-out; }
+    53% { transform: translateX(-1.5px); animation-timing-function: ease-in-out; }
+    58% { transform: translateX(1px); animation-timing-function: ease-out; }
+    63% { transform: translateX(0); }
+    100% { transform: translateX(0); }
+  }
   #tutorial-ui { position: fixed; inset: 0; z-index: 200; pointer-events: none; }
   #tutorial-exit {
     position: absolute; top: 10px; right: 12px; z-index: 202; pointer-events: auto;
@@ -469,6 +486,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     #tutorial-spotlight { transition: none; }
+    #tutorial-arrow-image { animation: none; }
   }
 
 </style>
@@ -508,7 +526,7 @@
 
 <div id="tutorial-dim" hidden aria-hidden="true"></div>
 <div id="tutorial-spotlight" hidden aria-hidden="true"></div>
-<div id="tutorial-arrow" hidden aria-hidden="true"><img id="tutorial-arrow-image" src="./tutorial-arrow.png" alt="" draggable="false"></div>
+<div id="tutorial-arrow" hidden aria-hidden="true"><div id="tutorial-arrow-sprite"><img id="tutorial-arrow-image" src="./tutorial-arrow.png" alt="" draggable="false"></div></div>
 <div id="tutorial-ui" hidden>
   <section id="tutorial-card" role="dialog" aria-live="polite" aria-label="Site tutorial">
     <button id="tutorial-exit" type="button" aria-label="Exit tour" title="Exit tour">×</button>
@@ -1484,7 +1502,7 @@ function positionTutorialOverlay() {
     left=Math.min(vw-cardWidth-16,Math.max(16,rect.left+rect.width/2-cardWidth/2));
   }
   card.style.left=left+'px'; card.style.top=Math.max(8,Math.min(top,vh-cardHeight-8))+'px';
-  const arrowLayer=$('#tutorial-arrow'), arrowImage=$('#tutorial-arrow-image'), arrowTarget=tutorialArrowTarget(step);
+  const arrowLayer=$('#tutorial-arrow'), arrowSprite=$('#tutorial-arrow-sprite'), arrowImage=$('#tutorial-arrow-image'), arrowTarget=tutorialArrowTarget(step);
   if (arrowTarget) {
     const targetBox=arrowTarget.getBoundingClientRect(), imageWidth=arrowImage.offsetWidth||58, imageHeight=arrowImage.offsetHeight||58, gap=8;
     const centerX=targetBox.left+targetBox.width/2, centerY=targetBox.top+targetBox.height/2;
@@ -1511,8 +1529,8 @@ function positionTutorialOverlay() {
     }
     const x=Math.max(imageWidth/2+2,Math.min(vw-imageWidth/2-2,placement.x));
     const y=Math.max(imageHeight/2+2,Math.min(vh-imageHeight/2-2,placement.y));
-    arrowImage.style.left=(x-imageWidth/2)+'px'; arrowImage.style.top=(y-imageHeight/2)+'px';
-    arrowImage.style.transform='rotate('+placement.angle+'deg)';
+    arrowSprite.style.left=(x-imageWidth/2)+'px'; arrowSprite.style.top=(y-imageHeight/2)+'px';
+    arrowSprite.style.transform='rotate('+placement.angle+'deg)';
     arrowLayer.hidden=false;
   } else arrowLayer.hidden=true;
 }
