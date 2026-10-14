@@ -237,10 +237,17 @@
 
   /* ---------- Tab 3: Rulebook ---------- */
   .rulebook-wrap { display: flex; flex-direction: column; height: 100%; gap: 12px; }
-  .pdf-open-btn {
-    align-self: center; background: #e0fff1; color: #000; font-weight: bold;
-    padding: 10px 22px; border-radius: 10px; text-decoration: none; font-size: 16px;
-    border: 1px solid #0a7c3a;
+  .rulebook-action {
+    box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
+    width: 136px; height: 40px; padding: 0 8px; border: 1px solid #0a7c3a;
+    border-radius: 10px; background: #e0fff1; color: #000;
+    font: bold 14px "Book Antiqua", "Palatino Linotype", Palatino, serif;
+    text-align: center; text-decoration: none; white-space: nowrap; cursor: pointer;
+  }
+  .rulebook-action:disabled { opacity: .55; cursor: default; }
+  .rulebook-toolbar {
+    display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center;
+    justify-content: center; gap: 8px;
   }
   .pdf-pages {
     flex: 1 1 auto; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch;
@@ -249,11 +256,9 @@
   }
   .pdf-page { width: 100%; max-width: 900px; height: auto; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
   .pdf-loading { color: #043; padding: 24px; text-align: center; }
-  .rulebook-toolbar { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
-  .rulebook-toolbar .pdf-open-btn { padding: 9px 14px; font-size: 15px; }
-  .rulebook-page-controls { display: flex; flex: 0 0 auto; align-items: center; gap: 7px; padding: 2px 0; color: #043; font-size: 14px; }
+  .rulebook-page-controls { display: flex; flex: 0 0 auto; align-items: center; gap: 7px; color: #043; font-size: 14px; }
   .rulebook-page-controls label { white-space: nowrap; }
-  .rulebook-page-controls input { width: 62px; padding: 7px 4px; border: 1px solid #087a35; border-radius: 8px; background: #fff; color: #111; text-align: center; font: inherit; }
+  .rulebook-page-controls input { width: 58px; height: 40px; padding: 0 4px; border: 1px solid #087a35; border-radius: 8px; background: #fff; color: #111; text-align: center; font: inherit; }
   .rulebook-page-controls input:disabled { opacity: .55; cursor: default; }
 
   /* ---------- Tab bar ---------- */
@@ -1067,31 +1072,43 @@ function getRulebookPdf() {
 
 function updateRulebookPageControls() {
   const input = $('#rulebook-page-number');
-  if (!input) return;
+  const jumpButton = $('#rulebook-page-jump');
+  const contentsButton = $('#rulebook-contents');
   const renderedCount = document.querySelectorAll('#pdf-pages .pdf-page').length;
   const availableCount = Math.max(0, renderedCount - 1); // The cover is excluded from user numbering.
-  input.disabled = availableCount === 0;
-  if (availableCount) input.max = String(availableCount);
+  if (input) {
+    input.disabled = availableCount === 0;
+    if (availableCount) input.max = String(availableCount);
+  }
+  if (jumpButton) jumpButton.disabled = availableCount === 0;
+  if (contentsButton) contentsButton.disabled = renderedCount < 4;
 }
 
-function jumpToRulebookPage() {
+function scrollToRulebookPdfPage(pdfPageNumber) {
   const pages = $('#pdf-pages');
-  const input = $('#rulebook-page-number');
-  if (!pages || !input) return;
+  if (!pages) return;
   const rendered = pages.querySelectorAll('.pdf-page');
-  const availableCount = rendered.length - 1;
-  if (availableCount < 1) return;
-  const requested = Number.parseInt(input.value, 10);
-  if (!Number.isFinite(requested)) return;
-  const pageNumber = Math.max(1, Math.min(availableCount, requested));
-  input.value = String(pageNumber);
-  const target = rendered[pageNumber]; // User page 1 maps to PDF page 2; PDF page 1 is the cover.
+  if (!rendered.length) return;
+  const pageIndex = Math.max(1, Math.min(rendered.length, pdfPageNumber)) - 1;
+  const target = rendered[pageIndex];
   const pageRect = pages.getBoundingClientRect();
   const targetRect = target.getBoundingClientRect();
   pages.scrollTo({
     top: pages.scrollTop + targetRect.top - pageRect.top - 10,
     behavior: 'smooth'
   });
+}
+
+function jumpToRulebookPage() {
+  const input = $('#rulebook-page-number');
+  const renderedCount = document.querySelectorAll('#pdf-pages .pdf-page').length;
+  const availableCount = renderedCount - 1;
+  if (!input || availableCount < 1) return;
+  const requested = Number.parseInt(input.value, 10);
+  if (!Number.isFinite(requested)) return;
+  const pageNumber = Math.max(1, Math.min(availableCount, requested));
+  input.value = String(pageNumber);
+  scrollToRulebookPdfPage(pageNumber + 1); // User page 1 maps to PDF page 2; PDF page 1 is the cover.
 }
 
 async function loadRulebook(container) {
@@ -1118,7 +1135,7 @@ async function loadRulebook(container) {
     updateRulebookPageControls();
   } catch (e) {
     const live = document.getElementById('pdf-pages');
-    if (live) live.innerHTML = '<div class="pdf-loading">Preview unavailable — use the “Open Rulebook PDF” button above.</div>';
+    if (live) live.innerHTML = '<div class="pdf-loading">Preview unavailable — use the “Open PDF” button above.</div>';
   } finally {
     rulebookRendering = false;
   }
@@ -1128,7 +1145,13 @@ function renderRulebook() {
   const wrap = el('div', { class: 'rulebook-wrap' });
   // User page numbers start after the cover: input 1 opens PDF page 2.
   const toolbar = el('div', { class: 'rulebook-toolbar' });
-  toolbar.appendChild(el('a', { class: 'pdf-open-btn', href: RULEBOOK_PDF, target: '_blank', text: 'Open PDF' }));
+  toolbar.appendChild(el('a', { class: 'rulebook-action', href: RULEBOOK_PDF, target: '_blank', text: 'Open PDF' }));
+
+  const contentsButton = el('button', { id: 'rulebook-contents', class: 'rulebook-action', type: 'button', text: 'Table of Contents' });
+  contentsButton.disabled = rulebookPageCount < 4;
+  contentsButton.addEventListener('click', () => scrollToRulebookPdfPage(4));
+  toolbar.appendChild(contentsButton);
+
   const controls = el('div', { class: 'rulebook-page-controls' });
   controls.appendChild(el('label', { for: 'rulebook-page-number', text: 'Jump to page:' }));
   const pageInput = el('input', {
@@ -1141,23 +1164,17 @@ function renderRulebook() {
     enterkeyhint: 'go',
     'aria-label': 'Rulebook page number, excluding cover'
   });
-  let pageJumpTimer = null;
-  const commitPageJump = () => {
-    clearTimeout(pageJumpTimer);
-    jumpToRulebookPage();
-  };
-  pageInput.addEventListener('input', () => {
-    clearTimeout(pageJumpTimer);
-    pageJumpTimer = setTimeout(jumpToRulebookPage, 800);
-  });
-  pageInput.addEventListener('change', commitPageJump);
   pageInput.addEventListener('keydown', event => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      commitPageJump();
+      jumpToRulebookPage();
     }
   });
   controls.appendChild(pageInput);
+  const jumpButton = el('button', { id: 'rulebook-page-jump', class: 'rulebook-action', type: 'button', text: 'Jump to page:' });
+  jumpButton.disabled = !rulebookPagesHTML;
+  jumpButton.addEventListener('click', jumpToRulebookPage);
+  controls.appendChild(jumpButton);
   toolbar.appendChild(controls);
   wrap.appendChild(toolbar);
 
