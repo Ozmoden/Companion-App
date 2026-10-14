@@ -500,6 +500,11 @@
     #tutorial-card { padding: 14px 15px 12px; }
     #tutorial-copy { font-size: 15px; }
   }
+  @media (orientation: landscape) {
+    #tutorial-card { max-height: calc(100dvh - 16px); overflow-y: auto; overscroll-behavior: contain; }
+    #tutorial-actions { gap: 6px; margin-top: 10px; }
+    #tutorial-back, #tutorial-next { min-width: 64px; padding: 6px 8px; font-size: 13px; }
+  }
   @media (prefers-reduced-motion: reduce) {
     #tutorial-spotlight { transition: none; }
     #tutorial-arrow-image { animation: none; }
@@ -1519,11 +1524,11 @@ function positionTutorialOverlay() {
     const preferRight=['tap-confirm','tap-notice-ok','tap-override'].includes(step.action);
     let side=preferLeft?'left':preferRight?'right':(leftRoom>=rightRoom?'left':'right');
     let available=side==='left'?leftRoom:rightRoom;
-    if (available<250) {
+    if (available<180) {
       side=side==='left'?'right':'left';
       available=side==='left'?leftRoom:rightRoom;
     }
-    if (available>=250) {
+    if (available>=180) {
       cardWidth=Math.min(cardWidth,available);
       sidePlacement={side,left:side==='left'?rect.left-sideGap-cardWidth:rect.right+sideGap};
     }
