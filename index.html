@@ -249,6 +249,10 @@
   }
   .pdf-page { width: 100%; max-width: 900px; height: auto; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
   .pdf-loading { color: #043; padding: 24px; text-align: center; }
+  .rulebook-page-controls { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 9px; padding: 2px 0; color: #043; font-size: 15px; }
+  .rulebook-page-controls input { width: 68px; padding: 7px 8px; border: 1px solid #087a35; border-radius: 8px; background: #fff; color: #111; text-align: center; font: inherit; }
+  .rulebook-page-controls button { padding: 7px 15px; border: 0; border-radius: 8px; background: #087a35; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+  .rulebook-page-controls button:disabled, .rulebook-page-controls input:disabled { opacity: .55; cursor: default; }
 
   /* ---------- Tab bar ---------- */
   /* Translucent ribbon locked to the bottom; slides away on swipe-down. */
@@ -1027,6 +1031,7 @@ function renderCards() {
    dependency, added deliberately to make the in-page preview scrollable).
    Rendered pages are cached so re-visiting the tab is instant. */
 let rulebookPagesHTML = null;   // cached <img> markup of rendered pages
+let rulebookPageCount = 0;
 let rulebookRendering = false;
 
 function ensurePdfJs() {
@@ -1058,6 +1063,41 @@ function getRulebookPdf() {
   return rulebookPdfPromise;
 }
 
+function updateRulebookPageControls() {
+  const input = $('#rulebook-page-number');
+  const button = $('#rulebook-page-go');
+  const total = $('#rulebook-page-count');
+  if (!input || !button || !total) return;
+  const renderedCount = document.querySelectorAll('#pdf-pages .pdf-page').length;
+  input.disabled = renderedCount === 0;
+  button.disabled = renderedCount === 0;
+  if (renderedCount) {
+    input.max = String(renderedCount);
+    total.textContent = 'of ' + renderedCount;
+  } else {
+    total.textContent = 'of —';
+  }
+}
+
+function jumpToRulebookPage() {
+  const pages = $('#pdf-pages');
+  const input = $('#rulebook-page-number');
+  if (!pages || !input) return;
+  const rendered = pages.querySelectorAll('.pdf-page');
+  if (!rendered.length) return;
+  const requested = Number.parseInt(input.value, 10);
+  if (!Number.isFinite(requested)) return;
+  const pageNumber = Math.max(1, Math.min(rendered.length, requested));
+  input.value = String(pageNumber);
+  const target = rendered[pageNumber - 1]; // PDF page 1 is the cover.
+  const pageRect = pages.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  pages.scrollTo({
+    top: pages.scrollTop + targetRect.top - pageRect.top - 10,
+    behavior: 'smooth'
+  });
+}
+
 async function loadRulebook(container) {
   if (rulebookRendering) return;
   rulebookRendering = true;
@@ -1076,8 +1116,10 @@ async function loadRulebook(container) {
       imgs.push('<img class="pdf-page" alt="Page ' + p + '" src="' + canvas.toDataURL('image/jpeg', 0.85) + '" />');
     }
     rulebookPagesHTML = imgs.join('');
+    rulebookPageCount = imgs.length;
     const live = document.getElementById('pdf-pages');
     if (live) live.innerHTML = rulebookPagesHTML;
+    updateRulebookPageControls();
   } catch (e) {
     const live = document.getElementById('pdf-pages');
     if (live) live.innerHTML = '<div class="pdf-loading">Preview unavailable — use the “Open Rulebook PDF” button above.</div>';
@@ -1088,16 +1130,47 @@ async function loadRulebook(container) {
 
 function renderRulebook() {
   const wrap = el('div', { class: 'rulebook-wrap' });
-  // Button is the first thing visible; the scrollable page preview sits below it.
+  // PDF page numbers include the cover as page 1.
   wrap.appendChild(el('a', { class: 'pdf-open-btn', href: RULEBOOK_PDF, target: '_blank', text: 'Open Rulebook PDF' }));
+  const controls = el('div', { class: 'rulebook-page-controls' });
+  controls.appendChild(el('label', { for: 'rulebook-page-number', text: 'Page (1 is cover)' }));
+  const pageInput = el('input', {
+    id: 'rulebook-page-number',
+    type: 'number',
+    min: '1',
+    max: String(rulebookPageCount || 1),
+    value: '1',
+    inputmode: 'numeric',
+    'aria-label': 'Rulebook page number'
+  });
+  const goToPage = () => jumpToRulebookPage();
+  pageInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      goToPage();
+    }
+  });
+  controls.appendChild(pageInput);
+  controls.appendChild(el('span', { id: 'rulebook-page-count', text: rulebookPageCount ? 'of ' + rulebookPageCount : 'of —' }));
+  controls.appendChild(el('button', {
+    id: 'rulebook-page-go',
+    type: 'button',
+    text: 'Go',
+    onclick: goToPage,
+    disabled: !rulebookPagesHTML
+  }));
+  wrap.appendChild(controls);
+
   const pages = el('div', { class: 'pdf-pages', id: 'pdf-pages' });
   if (rulebookPagesHTML) {
     pages.innerHTML = rulebookPagesHTML;            // cached — instant
   } else {
+    pageInput.disabled = true;
     pages.appendChild(el('div', { class: 'pdf-loading', text: 'Loading rulebook…' }));
     setTimeout(() => loadRulebook(pages), 0);       // render after it's in the DOM (needs clientWidth)
   }
   wrap.appendChild(pages);
+  if (rulebookPagesHTML) updateRulebookPageControls();
   return wrap;
 }
 
